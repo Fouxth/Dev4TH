@@ -115,6 +115,19 @@ function App() {
     setShowLogin(false);
   };
 
+  // Dynamic page title based on view/state
+  useEffect(() => {
+    if (!authUser) {
+      if (showLogin) {
+        document.title = 'เข้าสู่ระบบ | Dxv4TH';
+      } else {
+        document.title = 'Dxv4TH | บริการออกแบบระบบธุรกิจและพัฒนาซอฟต์แวร์ครบวงจร';
+      }
+    } else {
+      document.title = 'ระบบจัดการงานและเอกสาร | Dxv4TH';
+    }
+  }, [authUser, showLogin]);
+
   // Notification prefs — persisted in localStorage
   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(() => {
     try {
