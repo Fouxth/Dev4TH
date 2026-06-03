@@ -268,6 +268,23 @@ export function QuotationRequestsPage() {
     }
   };
 
+  // Auto-scale the A4 preview on window resizing to fit mobile screen width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        const padding = window.innerWidth < 640 ? 40 : 80;
+        const optimalScale = Math.max(0.35, Math.min(1.2, (window.innerWidth - padding) / 794));
+        setPreviewScale(optimalScale);
+      } else {
+        setPreviewScale(0.8);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Initial Load
   useEffect(() => {
     loadRequests();
@@ -1121,27 +1138,27 @@ export function QuotationRequestsPage() {
                   {editingDoc.items.map((item, index) => (
                     <div key={item.id} className="flex gap-2 items-start rounded-lg border border-white/5 bg-white/3 p-3">
                       <span className="mt-2.5 text-xs text-white/30 font-bold w-5">{index + 1}.</span>
-                      <div className="grid flex-1 gap-2 sm:grid-cols-[1fr_80px_100px]">
+                      <div className="grid flex-1 gap-2 grid-cols-12">
                         <input
                           type="text"
                           placeholder="รายละเอียดของสินค้า หรือ บริการ"
                           value={item.desc}
                           onChange={(e) => handleUpdateItem(item.id, 'desc', e.target.value)}
-                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35]"
+                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35] col-span-12 sm:col-span-6"
                         />
                         <input
                           type="number"
                           placeholder="จำนวน"
                           value={item.qty}
                           onChange={(e) => handleUpdateItem(item.id, 'qty', e.target.value)}
-                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35]"
+                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35] col-span-4 sm:col-span-2"
                         />
                         <input
                           type="number"
                           placeholder="ราคาต่อหน่วย"
                           value={item.rate}
                           onChange={(e) => handleUpdateItem(item.id, 'rate', e.target.value)}
-                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35]"
+                          className="h-9 rounded border border-white/5 bg-white/[0.03] px-2 text-sm text-white outline-none focus:border-[#ff6b35] col-span-8 sm:col-span-4"
                         />
                       </div>
                       <button
@@ -1676,74 +1693,144 @@ export function QuotationRequestsPage() {
                 ยังไม่มีใบเสนอราคาในระบบ
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10 bg-[#11161a]">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-white/5">
-                      <th className="px-4 py-3 font-bold text-white">เลขที่เอกสาร</th>
-                      <th className="px-4 py-3 font-bold text-white">ลูกค้า / บริษัท</th>
-                      <th className="px-4 py-3 font-bold text-white">ชื่อโครงการ</th>
-                      <th className="px-4 py-3 font-bold text-white">ยอดสุทธิ</th>
-                      <th className="px-4 py-3 font-bold text-white">วันที่ออก</th>
-                      <th className="px-4 py-3 font-bold text-white text-center">สถานะ</th>
-                      <th className="px-4 py-3 font-bold text-white text-center">การจัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredQuotations.map((quote) => (
-                      <tr key={quote.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 font-bold text-white">{quote.number}</td>
-                        <td className="px-4 py-3 text-white/80">{quote.client}</td>
-                        <td className="px-4 py-3 text-white/70 max-w-[200px] truncate">{quote.project || '—'}</td>
-                        <td className="px-4 py-3 font-extrabold text-[#ff6b35]">฿{quote.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-4 py-3 text-white/60">{formatDate(quote.issue)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <select
-                            value={quote.status}
-                            onChange={(e) => updateDocStatus('quote', quote.id, e.target.value)}
-                            className={`rounded-full border px-3 py-1 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
-                              quote.status === 'accepted' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
-                              quote.status === 'rejected' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
-                              quote.status === 'sent' ? 'border-blue-500/40 bg-blue-500/12 text-blue-300' :
-                              'border-white/15 bg-white/[0.04] text-white/60'
-                            }`}
-                          >
-                            <option value="draft">ร่าง</option>
-                            <option value="sent">ส่งแล้ว</option>
-                            <option value="accepted">อนุมัติแล้ว</option>
-                            <option value="rejected">ปฏิเสธ</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleEditQuotation(quote)}
-                              className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
-                              title="แก้ไขเอกสาร"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleConvertQuoteToInvoice(quote)}
-                              className="rounded-lg p-1.5 text-[#00d4ff] hover:bg-[#00d4ff]/10"
-                              title="แปลงเป็นใบแจ้งหนี้"
-                            >
-                              <Coins className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteQuotation(quote.id)}
-                              className="rounded-lg p-1.5 text-red-400 hover:bg-red-500/10"
-                              title="ลบเอกสาร"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-white/10 bg-[#11161a]">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-4 py-3 font-bold text-white">เลขที่เอกสาร</th>
+                        <th className="px-4 py-3 font-bold text-white">ลูกค้า / บริษัท</th>
+                        <th className="px-4 py-3 font-bold text-white">ชื่อโครงการ</th>
+                        <th className="px-4 py-3 font-bold text-white">ยอดสุทธิ</th>
+                        <th className="px-4 py-3 font-bold text-white">วันที่ออก</th>
+                        <th className="px-4 py-3 font-bold text-white text-center">สถานะ</th>
+                        <th className="px-4 py-3 font-bold text-white text-center">การจัดการ</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredQuotations.map((quote) => (
+                        <tr key={quote.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="px-4 py-3 font-bold text-white">{quote.number}</td>
+                          <td className="px-4 py-3 text-white/80">{quote.client}</td>
+                          <td className="px-4 py-3 text-white/70 max-w-[200px] truncate">{quote.project || '—'}</td>
+                          <td className="px-4 py-3 font-extrabold text-[#ff6b35]">฿{quote.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-white/60">{formatDate(quote.issue)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <select
+                              value={quote.status}
+                              onChange={(e) => updateDocStatus('quote', quote.id, e.target.value)}
+                              className={`rounded-full border px-3 py-1 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
+                                quote.status === 'accepted' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
+                                quote.status === 'rejected' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
+                                quote.status === 'sent' ? 'border-blue-500/40 bg-blue-500/12 text-blue-300' :
+                                'border-white/15 bg-white/[0.04] text-white/60'
+                              }`}
+                            >
+                              <option value="draft">ร่าง</option>
+                              <option value="sent">ส่งแล้ว</option>
+                              <option value="accepted">อนุมัติแล้ว</option>
+                              <option value="rejected">ปฏิเสธ</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleEditQuotation(quote)}
+                                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
+                                title="แก้ไขเอกสาร"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleConvertQuoteToInvoice(quote)}
+                                className="rounded-lg p-1.5 text-[#00d4ff] hover:bg-[#00d4ff]/10"
+                                title="แปลงเป็นใบแจ้งหนี้"
+                              >
+                                <Coins className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteQuotation(quote.id)}
+                                className="rounded-lg p-1.5 text-red-400 hover:bg-red-500/10"
+                                title="ลบเอกสาร"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="space-y-4 md:hidden">
+                  {filteredQuotations.map((quote) => (
+                    <div key={quote.id} className="rounded-xl border border-white/10 bg-[#11161a]/92 p-4 shadow-md space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-sm">{quote.number}</span>
+                        <select
+                          value={quote.status}
+                          onChange={(e) => updateDocStatus('quote', quote.id, e.target.value)}
+                          className={`rounded-full border px-2.5 py-0.5 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
+                            quote.status === 'accepted' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
+                            quote.status === 'rejected' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
+                            quote.status === 'sent' ? 'border-blue-500/40 bg-blue-500/12 text-blue-300' :
+                            'border-white/15 bg-white/[0.04] text-white/60'
+                          }`}
+                        >
+                          <option value="draft">ร่าง</option>
+                          <option value="sent">ส่งแล้ว</option>
+                          <option value="accepted">อนุมัติแล้ว</option>
+                          <option value="rejected">ปฏิเสธ</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-white/90 text-sm">{quote.client}</h4>
+                        <p className="text-xs text-white/60 truncate mt-0.5">{quote.project || '—'}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div>
+                          <span className="text-[10px] text-white/30 font-bold block uppercase">ยอดสุทธิ</span>
+                          <span className="font-extrabold text-[#ff6b35] text-base">
+                            ฿{quote.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-white/30 font-bold block uppercase">วันที่ออก</span>
+                          <span className="text-xs text-white/60">{formatDate(quote.issue)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+                        <button
+                          onClick={() => handleEditQuotation(quote)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          แก้ไข
+                        </button>
+                        <button
+                          onClick={() => handleConvertQuoteToInvoice(quote)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#00d4ff]/20 bg-[#00d4ff]/10 px-3 text-xs font-bold text-[#00d4ff] hover:bg-[#00d4ff]/20"
+                        >
+                          <Coins className="h-4 w-4" />
+                          สร้างใบแจ้งหนี้
+                        </button>
+                        <button
+                          onClick={() => handleDeleteQuotation(quote.id)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )
           )}
 
@@ -1758,65 +1845,126 @@ export function QuotationRequestsPage() {
                 ยังไม่มีใบแจ้งหนี้ในระบบ
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-white/10 bg-[#11161a]">
-                <table className="w-full text-left text-sm border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 bg-white/5">
-                      <th className="px-4 py-3 font-bold text-white">เลขที่เอกสาร</th>
-                      <th className="px-4 py-3 font-bold text-white">ลูกค้า / บริษัท</th>
-                      <th className="px-4 py-3 font-bold text-white">ชื่อโครงการ</th>
-                      <th className="px-4 py-3 font-bold text-white">ยอดสุทธิ</th>
-                      <th className="px-4 py-3 font-bold text-white">ครบกำหนดชำระ</th>
-                      <th className="px-4 py-3 font-bold text-white text-center">สถานะ</th>
-                      <th className="px-4 py-3 font-bold text-white text-center">การจัดการ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredInvoices.map((inv) => (
-                      <tr key={inv.id} className="border-b border-white/5 hover:bg-white/[0.02]">
-                        <td className="px-4 py-3 font-bold text-white">{inv.number}</td>
-                        <td className="px-4 py-3 text-white/80">{inv.client}</td>
-                        <td className="px-4 py-3 text-white/70 max-w-[200px] truncate">{inv.project || '—'}</td>
-                        <td className="px-4 py-3 font-extrabold text-[#ff6b35]">฿{inv.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                        <td className="px-4 py-3 text-white/60">{formatDate(inv.dueDate)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <select
-                            value={inv.status}
-                            onChange={(e) => updateDocStatus('invoice', inv.id, e.target.value)}
-                            className={`rounded-full border px-3 py-1 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
-                              inv.status === 'paid' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
-                              inv.status === 'overdue' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
-                              'border-orange-500/40 bg-orange-500/12 text-orange-300'
-                            }`}
-                          >
-                            <option value="unpaid">ค้างชำระ</option>
-                            <option value="paid">ชำระเงินแล้ว</option>
-                            <option value="overdue">เกินกำหนด</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button
-                              onClick={() => handleEditInvoice(inv)}
-                              className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
-                              title="แก้ไขเอกสาร"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteInvoice(inv.id)}
-                              className="rounded-lg p-1.5 text-red-400 hover:bg-red-500/10"
-                              title="ลบเอกสาร"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+              <>
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto rounded-xl border border-white/10 bg-[#11161a]">
+                  <table className="w-full text-left text-sm border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="px-4 py-3 font-bold text-white">เลขที่เอกสาร</th>
+                        <th className="px-4 py-3 font-bold text-white">ลูกค้า / บริษัท</th>
+                        <th className="px-4 py-3 font-bold text-white">ชื่อโครงการ</th>
+                        <th className="px-4 py-3 font-bold text-white">ยอดสุทธิ</th>
+                        <th className="px-4 py-3 font-bold text-white">ครบกำหนดชำระ</th>
+                        <th className="px-4 py-3 font-bold text-white text-center">สถานะ</th>
+                        <th className="px-4 py-3 font-bold text-white text-center">การจัดการ</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.map((inv) => (
+                        <tr key={inv.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                          <td className="px-4 py-3 font-bold text-white">{inv.number}</td>
+                          <td className="px-4 py-3 text-white/80">{inv.client}</td>
+                          <td className="px-4 py-3 text-white/70 max-w-[200px] truncate">{inv.project || '—'}</td>
+                          <td className="px-4 py-3 font-extrabold text-[#ff6b35]">฿{inv.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-white/60">{formatDate(inv.dueDate)}</td>
+                          <td className="px-4 py-3 text-center">
+                            <select
+                              value={inv.status}
+                              onChange={(e) => updateDocStatus('invoice', inv.id, e.target.value)}
+                              className={`rounded-full border px-3 py-1 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
+                                inv.status === 'paid' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
+                                inv.status === 'overdue' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
+                                'border-orange-500/40 bg-orange-500/12 text-orange-300'
+                              }`}
+                            >
+                              <option value="unpaid">ค้างชำระ</option>
+                              <option value="paid">ชำระเงินแล้ว</option>
+                              <option value="overdue">เกินกำหนด</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleEditInvoice(inv)}
+                                className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white"
+                                title="แก้ไขเอกสาร"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteInvoice(inv.id)}
+                                className="rounded-lg p-1.5 text-red-400 hover:bg-red-500/10"
+                                title="ลบเอกสาร"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="space-y-4 md:hidden">
+                  {filteredInvoices.map((inv) => (
+                    <div key={inv.id} className="rounded-xl border border-white/10 bg-[#11161a]/92 p-4 shadow-md space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-sm">{inv.number}</span>
+                        <select
+                          value={inv.status}
+                          onChange={(e) => updateDocStatus('invoice', inv.id, e.target.value)}
+                          className={`rounded-full border px-2.5 py-0.5 text-xs font-bold outline-none cursor-pointer [&>option]:bg-[#11161a] ${
+                            inv.status === 'paid' ? 'border-green-500/40 bg-green-500/12 text-green-300' :
+                            inv.status === 'overdue' ? 'border-red-500/40 bg-red-500/12 text-red-300' :
+                            'border-orange-500/40 bg-orange-500/12 text-orange-300'
+                          }`}
+                        >
+                          <option value="unpaid">ค้างชำระ</option>
+                          <option value="paid">ชำระเงินแล้ว</option>
+                          <option value="overdue">เกินกำหนด</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <h4 className="font-semibold text-white/90 text-sm">{inv.client}</h4>
+                        <p className="text-xs text-white/60 truncate mt-0.5">{inv.project || '—'}</p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div>
+                          <span className="text-[10px] text-white/30 font-bold block uppercase">ยอดสุทธิ</span>
+                          <span className="font-extrabold text-[#ff6b35] text-base">
+                            ฿{inv.total.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-white/30 font-bold block uppercase">ครบกำหนดชำระ</span>
+                          <span className="text-xs text-white/60">{formatDate(inv.dueDate)}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/5">
+                        <button
+                          onClick={() => handleEditInvoice(inv)}
+                          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          แก้ไข
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvoice(inv.id)}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )
           )}
 
