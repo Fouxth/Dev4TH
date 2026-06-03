@@ -27,6 +27,53 @@ interface PublicWork {
   githubUrl?: string;
 }
 
+const generateProjectDescription = (repoName: string, analysis: { language: string; frameworks: string[]; databases: string[] } | null) => {
+  if (!analysis) return '';
+  const name = repoName || '';
+  const lang = analysis.language || 'TypeScript';
+  const fws = analysis.frameworks || [];
+  const dbs = analysis.databases || [];
+  
+  // Try to determine project category from name
+  let category = 'ระบบเว็บแอปพลิเคชันและซอฟต์แวร์';
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('pos') || lowerName.includes('retail') || lowerName.includes('shop') || lowerName.includes('store') || lowerName.includes('market') || lowerName.includes('commerce') || lowerName.includes('sales')) {
+    category = 'ระบบจัดการหน้าร้านและคลังสินค้า (POS / Retail Management)';
+  } else if (lowerName.includes('booking') || lowerName.includes('queue') || lowerName.includes('reserve') || lowerName.includes('calendar') || lowerName.includes('appointment')) {
+    category = 'ระบบจองคิวและลงทะเบียนออนไลน์ (Booking & Reservation)';
+  } else if (lowerName.includes('dashboard') || lowerName.includes('admin') || lowerName.includes('portal') || lowerName.includes('workspace') || lowerName.includes('crm') || lowerName.includes('erp') || lowerName.includes('todo') || lowerName.includes('task')) {
+    category = 'ระบบบริหารจัดการหลังบ้านและแดชบอร์ดควบคุม (Admin Dashboard Workspace)';
+  } else if (lowerName.includes('chat') || lowerName.includes('line') || lowerName.includes('bot') || lowerName.includes('oa') || lowerName.includes('messenger')) {
+    category = 'ระบบบูรณาการ LINE OA / LINE LIFF และแอปพลิเคชันแชตอัจฉริยะ';
+  } else if (lowerName.includes('auth') || lowerName.includes('jwt') || lowerName.includes('security') || lowerName.includes('login')) {
+    category = 'ระบบล็อกอิน จัดการสิทธิ์การใช้งาน (Authentication & Authorization Guard)';
+  } else if (lowerName.includes('invoice') || lowerName.includes('bill') || lowerName.includes('finance') || lowerName.includes('pay') || lowerName.includes('money')) {
+    category = 'ระบบจัดการใบเสร็จ ใบเสนอราคา และติดตามสถานะการชำระเงิน';
+  }
+
+  // Categorize frameworks into frontend vs backend
+  const frontends = fws.filter(f => ['React.js', 'Next.js', 'Vue.js', 'Vite', 'Nuxt.js', 'Flutter', 'Tailwind'].includes(f));
+  const backends = fws.filter(f => ['Express.js', 'NestJS', 'Fastify', 'Koa.js', 'Go', 'Python', 'FastAPI', 'Django', 'Flask', 'Spring Boot'].includes(f));
+  
+  let stackDetails = `พัฒนาขึ้นโดยใช้ภาษาหลักคือ ${lang}`;
+  
+  if (frontends.length > 0) {
+    stackDetails += ` ร่วมกับเฟรมเวิร์กส่วนติดต่อผู้ใช้งานอย่าง ${frontends.join(' และ ')}`;
+  }
+  if (backends.length > 0) {
+    stackDetails += ` เสริมด้วยสถาปัตยกรรม API หลังบ้านที่พัฒนาด้วย ${backends.join(', ')}`;
+  }
+  
+  let dbDetails = '';
+  if (dbs.length > 0) {
+    dbDetails = `สำหรับการเก็บข้อมูลและจัดการข้อมูลแบบมีโครงสร้าง ระบบได้เชื่อมโยงกับฐานข้อมูล ${dbs.join(', ')} ในการทำงาน`;
+  } else {
+    dbDetails = `เน้นโครงสร้างสถาปัตยกรรมที่ยืดหยุ่น ปรับแต่งง่าย และรองรับการสเกลใช้งานในอนาคต`;
+  }
+  
+  return `${category} ที่ออกแบบมาอย่างครบครัน ${stackDetails} ${dbDetails}`;
+};
+
 export function PublicWorksPage() {
   const [works, setWorks] = useState<PublicWork[]>([]);
   const [loading, setLoading] = useState(true);
@@ -519,9 +566,11 @@ export function PublicWorksPage() {
                             if (analysisResult.suggestedTags) {
                               setTagsInput(analysisResult.suggestedTags.join(', '));
                             }
-                            if (repo.description) {
-                              setText(repo.description);
-                            }
+                            const generatedDesc = generateProjectDescription(repo.name, analysisResult);
+                            const finalDesc = repo.description 
+                              ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
+                              : generatedDesc;
+                            setText(finalDesc);
                             toast.success('คัดลอกข้อมูลลงฟอร์มเรียบร้อยแล้ว!');
                           }
                         }}
