@@ -14,6 +14,10 @@
     {
       "source": "/uploads/:path*",
       "destination": "https://dev4th.duckdns.org/uploads/:path*"
+    },
+    {
+      "source": "/((?!api|uploads|socket.io).*)",
+      "destination": "/index.html"
     }
   ]
 }
