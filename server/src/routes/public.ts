@@ -114,3 +114,44 @@ publicRouter.get('/works', async (_req, res) => {
     }
 });
 
+// GET /api/public/settings
+publicRouter.get('/settings', async (_req, res) => {
+    try {
+        let setting = await prisma.systemSetting.findUnique({
+            where: { id: 'default' }
+        });
+        
+        if (!setting) {
+            // Seed defaults matching user requirements if not exists in DB yet
+            setting = await prisma.systemSetting.create({
+                data: {
+                    id: 'default',
+                    name: 'Dev4TH ดีไซน์ สตูดิโอ',
+                    tagline: 'บริการออกแบบมืออาชีพ',
+                    website: 'https://devath.io',
+                    email: 'support@dev4th.com',
+                    phone: '085-829-4254',
+                    addr: 'กรุงเทพมหานคร',
+                    bank: 'ธนาคารกสิกรไทย',
+                    accNum: '',
+                    accName: '',
+                    currency: 'THB',
+                    vat: 7,
+                    validity: 30,
+                    dueDays: 14,
+                    terms: 'กรุณาชำระเงินภายใน 30 วัน หลังจากได้รับใบแจ้งหนี้\nสอบถามข้อมูลเพิ่มเติม: support@dev4th.com',
+                    lineId: '@482zdyfi',
+                    lineQrUrl: '',
+                    serviceArea: 'Remote — ทั่วประเทศไทย',
+                    responseSla: 'ภายใน 24 ชม.'
+                }
+            });
+        }
+        
+        res.json(setting);
+    } catch (error) {
+        console.error('Fetch public system settings error:', error);
+        res.status(500).json({ error: 'ไม่สามารถโหลดการตั้งค่าระบบได้' });
+    }
+});
+

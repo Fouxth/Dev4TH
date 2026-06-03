@@ -429,6 +429,12 @@ model SystemSetting {
   validity  Int      @default(30)
   dueDays   Int      @default(14)
   terms     String   @default("กรุณาชำระเงินภายใน 30 วัน หลังจากได้รับใบแจ้งหนี้\nสอบถามข้อมูลเพิ่มเติม: hello@devath.io")
+
+  lineId      String   @default("")
+  lineQrUrl   String   @default("")
+  serviceArea String   @default("Remote — ทั่วประเทศไทย")
+  responseSla String   @default("ภายใน 24 ชม.")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -127,11 +127,21 @@ interface PublicWork {
 
 export function PublicHomePage() {
   const [portfolioWorks, setPortfolioWorks] = useState<PublicWork[]>(works);
+  const [settings, setSettings] = useState({
+    email: 'support@dev4th.com',
+    phone: '085-829-4254',
+    lineId: '@482zdyfi',
+    lineQrUrl: '',
+    serviceArea: 'Remote — ทั่วประเทศไทย',
+    responseSla: 'ภายใน 24 ชม.'
+  });
 
   useEffect(() => {
-    const fetchPublicWorks = async () => {
+    const fetchPublicData = async () => {
+      const socketUrl = import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('/socket.io', '') : 'https://dev4th.duckdns.org';
+      
+      // Fetch works
       try {
-        const socketUrl = import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('/socket.io', '') : 'https://dev4th.duckdns.org';
         const res = await fetch(`${socketUrl}/api/public/works`);
         if (res.ok) {
           const data = await res.json();
@@ -142,8 +152,28 @@ export function PublicHomePage() {
       } catch (err) {
         console.error('Failed to load dynamic portfolio works:', err);
       }
+
+      // Fetch settings
+      try {
+        const res = await fetch(`${socketUrl}/api/public/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setSettings({
+              email: data.email || 'support@dev4th.com',
+              phone: data.phone || '085-829-4254',
+              lineId: data.lineId || '@482zdyfi',
+              lineQrUrl: data.lineQrUrl || '',
+              serviceArea: data.serviceArea || 'Remote — ทั่วประเทศไทย',
+              responseSla: data.responseSla || 'ภายใน 24 ชม.'
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load dynamic settings:', err);
+      }
     };
-    fetchPublicWorks();
+    fetchPublicData();
   }, []);
 
   const [currentTab, setCurrentTab] = useState<'home' | 'works' | 'contact'>(() => {
@@ -906,10 +936,10 @@ export function PublicHomePage() {
             </h3>
             <div className="space-y-3">
               {[
-                [Mail, 'Email', 'support@dev4th.com'],
-                [MessageCircle, 'LINE OA ID', '@482zdyfi'],
-                [Phone, 'Phone', '085-829-4254'],
-                [MapPin, 'Service Area', 'Remote — ทั่วประเทศไทย'],
+                [Mail, 'Email', settings.email],
+                [MessageCircle, 'LINE OA ID', settings.lineId],
+                [Phone, 'Phone', settings.phone],
+                [MapPin, 'Service Area', settings.serviceArea],
               ].map(([Icon, label, value]) => (
                 <div key={label as string} className="flex gap-3 items-center rounded-lg border border-white/5 bg-black/20 p-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#ff6b35]/10 text-[#ff8c42] shrink-0">
@@ -927,7 +957,7 @@ export function PublicHomePage() {
           {/* SLA Card */}
           <div className="rounded-lg border border-[#ff6b35]/30 bg-[#ff6b35]/5 p-5">
             <h3 className="text-xs font-black uppercase tracking-wider text-[#ffb199]">Response SLA</h3>
-            <p className="mt-2 text-3xl font-black text-white leading-none">ภายใน 24 ชม.</p>
+            <p className="mt-2 text-3xl font-black text-white leading-none">{settings.responseSla}</p>
             <p className="mt-2 text-xs leading-5 text-white/60">
               เมื่อส่งขอบเขตระบบแล้ว ทีมงานจะสแกนความสนใจ ข้อมูล และสรุปช่วงราคาเพื่อชี้แจงกลับโดยเร็วที่สุด
             </p>
@@ -937,28 +967,32 @@ export function PublicHomePage() {
           <div className="rounded-lg border border-white/10 bg-white/[0.02] p-5 text-center">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/40 block mb-3">Add Friend on LINE</span>
             <div className="inline-flex p-3 rounded-lg bg-white mb-2">
-              {/* Sleek inline-SVG QR Code mock representation */}
-              <svg width="100" height="100" viewBox="0 0 100 100" className="text-black">
-                <rect width="100" height="100" fill="white" />
-                <path d="M10,10 h20 v20 h-20 z M15,15 h10 v10 h-10 z" fill="black" />
-                <path d="M70,10 h20 v20 h-20 z M75,15 h10 v10 h-10 z" fill="black" />
-                <path d="M10,70 h20 v20 h-20 z M15,75 h10 v10 h-10 z" fill="black" />
-                {/* Random code modules to look like a clean modern QR */}
-                <rect x="35" y="10" width="5" height="15" fill="black" />
-                <rect x="45" y="15" width="10" height="5" fill="black" />
-                <rect x="35" y="30" width="20" height="5" fill="black" />
-                <rect x="60" y="30" width="5" height="10" fill="black" />
-                <rect x="10" y="35" width="15" height="5" fill="black" />
-                <rect x="15" y="45" width="30" height="5" fill="black" />
-                <rect x="50" y="45" width="15" height="5" fill="black" />
-                <rect x="35" y="60" width="5" height="20" fill="black" />
-                <rect x="45" y="70" width="15" height="15" fill="black" />
-                <rect x="70" y="40" width="20" height="5" fill="black" />
-                <rect x="80" y="55" width="10" height="25" fill="black" />
-                <rect x="65" y="75" width="10" height="5" fill="black" />
-              </svg>
+              {settings.lineQrUrl ? (
+                <img src={settings.lineQrUrl} alt="LINE QR Code" className="w-[100px] h-[100px] object-contain rounded-md" />
+              ) : (
+                /* Sleek inline-SVG QR Code mock representation */
+                <svg width="100" height="100" viewBox="0 0 100 100" className="text-black">
+                  <rect width="100" height="100" fill="white" />
+                  <path d="M10,10 h20 v20 h-20 z M15,15 h10 v10 h-10 z" fill="black" />
+                  <path d="M70,10 h20 v20 h-20 z M75,15 h10 v10 h-10 z" fill="black" />
+                  <path d="M10,70 h20 v20 h-20 z M15,75 h10 v10 h-10 z" fill="black" />
+                  {/* Random code modules to look like a clean modern QR */}
+                  <rect x="35" y="10" width="5" height="15" fill="black" />
+                  <rect x="45" y="15" width="10" height="5" fill="black" />
+                  <rect x="35" y="30" width="20" height="5" fill="black" />
+                  <rect x="60" y="30" width="5" height="10" fill="black" />
+                  <rect x="10" y="35" width="15" height="5" fill="black" />
+                  <rect x="15" y="45" width="30" height="5" fill="black" />
+                  <rect x="50" y="45" width="15" height="5" fill="black" />
+                  <rect x="35" y="60" width="5" height="20" fill="black" />
+                  <rect x="45" y="70" width="15" height="15" fill="black" />
+                  <rect x="70" y="40" width="20" height="5" fill="black" />
+                  <rect x="80" y="55" width="10" height="25" fill="black" />
+                  <rect x="65" y="75" width="10" height="5" fill="black" />
+                </svg>
+              )}
             </div>
-            <p className="text-xs font-bold text-white/80">LINE ID: @482zdyfi</p>
+            <p className="text-xs font-bold text-white/80">LINE ID: {settings.lineId}</p>
           </div>
 
         </aside>

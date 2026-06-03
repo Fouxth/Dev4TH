@@ -22,8 +22,8 @@ systemSettingsRouter.get('/', async (_req, res) => {
                     name: 'Dev4TH ดีไซน์ สตูดิโอ',
                     tagline: 'บริการออกแบบมืออาชีพ',
                     website: 'https://devath.io',
-                    email: 'hello@devath.io',
-                    phone: '02-xxx-xxxx',
+                    email: 'support@dev4th.com',
+                    phone: '085-829-4254',
                     addr: 'กรุงเทพมหานคร',
                     bank: 'ธนาคารกสิกรไทย',
                     accNum: '',
@@ -32,7 +32,11 @@ systemSettingsRouter.get('/', async (_req, res) => {
                     vat: 7,
                     validity: 30,
                     dueDays: 14,
-                    terms: 'กรุณาชำระเงินภายใน 30 วัน หลังจากได้รับใบแจ้งหนี้\nสอบถามข้อมูลเพิ่มเติม: hello@devath.io'
+                    terms: 'กรุณาชำระเงินภายใน 30 วัน หลังจากได้รับใบแจ้งหนี้\nสอบถามข้อมูลเพิ่มเติม: support@dev4th.com',
+                    lineId: '@482zdyfi',
+                    lineQrUrl: '',
+                    serviceArea: 'Remote — ทั่วประเทศไทย',
+                    responseSla: 'ภายใน 24 ชม.'
                 }
             });
         }

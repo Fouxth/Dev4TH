@@ -83,6 +83,10 @@ interface SystemSetting {
   validity: number;
   dueDays: number;
   terms: string;
+  lineId?: string;
+  lineQrUrl?: string;
+  serviceArea?: string;
+  responseSla?: string;
 }
 
 const statusLabels: Record<QuotationRequest['status'], string> = {

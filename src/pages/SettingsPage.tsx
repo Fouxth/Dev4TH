@@ -19,6 +19,10 @@ interface SystemSetting {
     validity: number;
     dueDays: number;
     terms: string;
+    lineId?: string;
+    lineQrUrl?: string;
+    serviceArea?: string;
+    responseSla?: string;
     updatedAt?: string;
 }
 
@@ -413,6 +417,46 @@ export function SettingsPage({ currentUser, lang, onLangChange: _onLangChange, o
                                         onChange={e => setDocSettings({ ...docSettings, website: e.target.value })}
                                         className={inputCls}
                                         placeholder="https://example.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>{isTh ? 'LINE OA ID' : 'LINE OA ID'}</label>
+                                    <input
+                                        type="text"
+                                        value={docSettings.lineId || ''}
+                                        onChange={e => setDocSettings({ ...docSettings, lineId: e.target.value })}
+                                        className={inputCls}
+                                        placeholder="@482zdyfi"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>{isTh ? 'ลิงก์รูปภาพ LINE QR Code' : 'LINE QR Code URL'}</label>
+                                    <input
+                                        type="text"
+                                        value={docSettings.lineQrUrl || ''}
+                                        onChange={e => setDocSettings({ ...docSettings, lineQrUrl: e.target.value })}
+                                        className={inputCls}
+                                        placeholder="https://example.com/qr.png"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>{isTh ? 'พื้นที่ให้บริการ (Service Area)' : 'Service Area'}</label>
+                                    <input
+                                        type="text"
+                                        value={docSettings.serviceArea || ''}
+                                        onChange={e => setDocSettings({ ...docSettings, serviceArea: e.target.value })}
+                                        className={inputCls}
+                                        placeholder="Remote — ทั่วประเทศไทย"
+                                    />
+                                </div>
+                                <div>
+                                    <label className={labelCls}>{isTh ? 'เวลาตอบกลับ (Response SLA)' : 'Response SLA'}</label>
+                                    <input
+                                        type="text"
+                                        value={docSettings.responseSla || ''}
+                                        onChange={e => setDocSettings({ ...docSettings, responseSla: e.target.value })}
+                                        className={inputCls}
+                                        placeholder="ภายใน 24 ชม."
                                     />
                                 </div>
                             </div>
