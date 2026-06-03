@@ -160,22 +160,41 @@ export function PublicWorksPage() {
     setAnalysisResult(null);
     try {
       const defaultBranch = repo.default_branch || 'main';
-      const pkgUrl = `https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/package.json`;
-      const res = await fetch(pkgUrl);
+      const pkgUrls = [
+        `https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/package.json`,
+        `https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/frontend/package.json`,
+        `https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/backend/package.json`,
+        `https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/webpage/package.json`
+      ];
+
+      let deps: Record<string, string> = {};
+
+      for (const url of pkgUrls) {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            const pkg = await response.json();
+            deps = { ...deps, ...pkg.dependencies, ...pkg.devDependencies };
+          }
+        } catch (e) {
+          // Ignore individual fetch/parsing failures
+        }
+      }
       
       let frameworks: string[] = [];
       let databases: string[] = [];
       
-      if (res.ok) {
-        const pkg = await res.json();
-        const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-
+      if (Object.keys(deps).length > 0) {
         // Analyze Frontend
         if (deps['next']) frameworks.push('Next.js');
         else if (deps['react']) frameworks.push('React.js');
         else if (deps['vue']) frameworks.push('Vue.js');
         else if (deps['nuxt']) frameworks.push('Nuxt.js');
         else if (deps['svelte']) frameworks.push('Svelte');
+
+        if (deps['tailwindcss'] || deps['@tailwindcss/vite']) {
+          frameworks.push('Tailwind CSS');
+        }
 
         // Analyze Backend
         if (deps['express']) frameworks.push('Express.js');
