@@ -978,7 +978,7 @@ export function QuotationRequestsPage() {
 
       {/* EDITOR MODE OVERLAY */}
       {editingDoc ? (
-        <div className="rounded-xl border border-white/10 bg-[#11161a]/95 p-6 shadow-2xl">
+        <div className="rounded-xl border border-white/10 bg-[#11161a]/95 p-3 sm:p-6 shadow-2xl">
           {/* Editor Headerbar */}
           <div className="flex flex-col gap-4 border-b border-white/5 pb-4 md:flex-row md:items-center md:justify-between">
             <button
@@ -988,13 +988,13 @@ export function QuotationRequestsPage() {
               <ArrowLeft className="h-4 w-4" />
               กลับหน้าหลัก
             </button>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               <button
                 onClick={handlePrint}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 sm:px-3 text-xs font-bold text-white hover:bg-white/10"
               >
                 <Printer className="h-4 w-4" />
-                พิมพ์
+                <span className="hidden sm:inline">พิมพ์</span>
               </button>
               <button
                 onClick={handleDownloadPDF}
@@ -1002,7 +1002,7 @@ export function QuotationRequestsPage() {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-50"
               >
                 <Download className="h-4 w-4" />
-                ดาวน์โหลด PDF
+                <span className="hidden sm:inline">ดาวน์โหลด PDF</span><span className="sm:hidden">PDF</span>
               </button>
               <button
                 onClick={handleSendEmail}
@@ -1010,7 +1010,7 @@ export function QuotationRequestsPage() {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#ff6b35]/20 bg-[#ff6b35]/10 px-3 text-xs font-bold text-[#ff6b35] hover:bg-[#ff6b35]/20 disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
-                ส่งอีเมลหาลูกค้า
+                <span className="hidden sm:inline">ส่งอีเมลหาลูกค้า</span><span className="sm:hidden">ส่ง</span>
               </button>
               <button
                 onClick={() => handleSaveDoc(false)}
@@ -1246,7 +1246,7 @@ export function QuotationRequestsPage() {
               </div>
 
               {/* Preview Box Container */}
-              <div className="w-full overflow-auto rounded-lg border border-white/10 bg-[#080d11] p-4 flex justify-center max-h-[850px] custom-scrollbar">
+              <div className="w-full overflow-auto rounded-lg border border-white/10 bg-[#080d11] p-2 sm:p-4 flex justify-center max-h-[850px] custom-scrollbar">
                 <div 
                   style={{ 
                     transform: `scale(${previewScale})`,
@@ -1515,7 +1515,7 @@ export function QuotationRequestsPage() {
       ) : (
         <>
           {/* TABS SELECTOR */}
-          <div className="flex flex-wrap gap-2 border-b border-white/5 pb-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b border-white/5 pb-2">
             {[
               { id: 'requests', label: 'คำขอรับบริการ', count: requests.length },
               { id: 'quotations', label: 'ใบเสนอราคา', count: quotations.length },
@@ -1528,7 +1528,7 @@ export function QuotationRequestsPage() {
                 <button
                   key={tab.id}
                   onClick={() => handleTabChange(tab.id as any)}
-                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+                  className={`inline-flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition ${
                     isActive 
                       ? 'bg-[rgba(255,107,53,0.15)] text-[#ff6b35] border border-[#ff6b35]/25' 
                       : 'text-white/60 hover:bg-white/5 hover:text-white'
@@ -1970,7 +1970,7 @@ export function QuotationRequestsPage() {
 
           {/* TAB CONTENT: DOCUMENT SYSTEM SETTINGS */}
           {activeTab === 'settings' && (
-            <form onSubmit={handleSaveSettings} className="rounded-xl border border-white/10 bg-[#11161a]/92 p-6 shadow-xl space-y-6">
+            <form onSubmit={handleSaveSettings} className="rounded-xl border border-white/10 bg-[#11161a]/92 p-3 sm:p-6 shadow-xl space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-white mb-2">⚙️ ตั้งค่าโปรไฟล์และข้อมูลในการออกเอกสาร</h3>
                 <p className="text-sm text-white/50">กรอกข้อมูลบริษัทและเลขบัญชีรับเงิน เพื่อนำไปใช้เป็นค่าเริ่มต้นในระบบใบเสนอราคาและใบแจ้งหนี้</p>
