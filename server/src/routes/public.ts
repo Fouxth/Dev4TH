@@ -100,3 +100,17 @@ publicRouter.post('/quotation-requests', async (req, res) => {
         res.status(500).json({ error: 'ไม่สามารถส่งคำขอใบเสนอราคาได้' });
     }
 });
+
+// GET /api/public/works
+publicRouter.get('/works', async (_req, res) => {
+    try {
+        const works = await prisma.publicWork.findMany({
+            orderBy: { createdAt: 'asc' }
+        });
+        res.json(works);
+    } catch (error) {
+        console.error('Fetch public works error:', error);
+        res.status(500).json({ error: 'ไม่สามารถโหลดข้อมูลผลงานได้' });
+    }
+});
+

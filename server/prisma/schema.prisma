@@ -433,3 +433,18 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 }
 
+// ============ Public Works / Portfolio ============
+model PublicWork {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  industry    String
+  stack       String
+  tags        String[]
+  text        String   @db.Text
+  featured    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+

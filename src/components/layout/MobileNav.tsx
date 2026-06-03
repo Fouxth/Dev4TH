@@ -7,7 +7,8 @@ import {
   Users,
   BarChart3,
   FileText,
-  Settings
+  Settings,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -26,6 +27,7 @@ export function MobileNav({ activeView, onViewChange, userRole }: MobileNavProps
     { id: 'tasks', icon: CheckSquare, label: t.sidebar.tasks },
     { id: 'projects', icon: FolderKanban, label: t.sidebar.projects },
     { id: 'quotation-requests', icon: FileText, label: 'เอกสาร', roles: ['admin', 'manager'] as string[] },
+    { id: 'public-works', icon: Briefcase, label: 'ผลงาน', roles: ['admin', 'manager'] as string[] },
     { id: 'calendar', icon: Calendar, label: t.sidebar.calendar },
     { id: 'sprints', icon: Zap, label: t.sidebar.sprints },
     { id: 'team', icon: Users, label: t.sidebar.team },

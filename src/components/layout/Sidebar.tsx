@@ -17,7 +17,8 @@ import {
   Sun,
   Moon,
   Zap,
-  MessageSquare
+  MessageSquare,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -50,6 +51,7 @@ export function Sidebar({ currentUser, activeView, onViewChange, onLogout, isMob
     { id: 'tasks', label: t.sidebar.tasks, icon: CheckSquare },
     { id: 'projects', label: t.sidebar.projects, icon: FolderKanban },
     { id: 'quotation-requests', label: 'ใบเสนอราคา & การเงิน', icon: FileText, roles: ['admin', 'manager'] as string[] },
+    { id: 'public-works', label: 'จัดการผลงานหน้าบ้าน', icon: Briefcase, roles: ['admin', 'manager'] as string[] },
     { id: 'sprints', label: t.sidebar.sprints || 'Sprints', icon: Zap },
     { id: 'team', label: t.sidebar.team, icon: Users },
     { id: 'calendar', label: t.sidebar.calendar, icon: Calendar },

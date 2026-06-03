@@ -115,6 +115,26 @@ const faqItems = [
 ];
 
 export function PublicHomePage() {
+  const [portfolioWorks, setPortfolioWorks] = useState(works);
+
+  useEffect(() => {
+    const fetchPublicWorks = async () => {
+      try {
+        const socketUrl = import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('/socket.io', '') : 'https://dev4th.duckdns.org';
+        const res = await fetch(`${socketUrl}/api/public/works`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setPortfolioWorks(data);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load dynamic portfolio works:', err);
+      }
+    };
+    fetchPublicWorks();
+  }, []);
+
   const [currentTab, setCurrentTab] = useState<'home' | 'works' | 'contact'>(() => {
     const path = window.location.pathname;
     if (path === '/works' || path === '/portfolio') return 'works';
@@ -230,7 +250,7 @@ export function PublicHomePage() {
   const [selectedIndustry, setSelectedIndustry] = useState('All');
   const [selectedTech, setSelectedTech] = useState('All');
 
-  const filteredWorks = works.filter((work) => {
+  const filteredWorks = portfolioWorks.filter((work) => {
     const matchesSearch =
       work.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       work.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -402,7 +422,7 @@ export function PublicHomePage() {
           </button>
         </div>
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
-          {works.filter(w => w.featured).map((work) => (
+          {portfolioWorks.filter(w => w.featured).map((work) => (
             <article key={work.name} className="flex flex-col justify-between rounded-lg border border-white/10 bg-[#11161a]/60 p-6 relative overflow-hidden group">
               <div className="absolute -inset-px bg-gradient-to-b from-[#ff6b35]/5 to-transparent opacity-0 group-hover:opacity-100 transition duration-500 pointer-events-none -z-10" />
               <div>
@@ -609,7 +629,7 @@ export function PublicHomePage() {
               />
             </div>
             <p className="text-xs font-bold text-white/40 tracking-wider uppercase shrink-0">
-              พบ {filteredWorks.length} จาก {works.length} ระบบ
+              พบ {filteredWorks.length} จาก {portfolioWorks.length} ระบบ
             </p>
           </div>
 

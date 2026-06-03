@@ -29,6 +29,7 @@ import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
 import { QuotationRequestsPage } from '@/pages/QuotationRequestsPage';
+import { PublicWorksPage } from '@/pages/PublicWorksPage';
 import type { Task, TaskStatus, TaskFilter, User } from '@/types';
 import { cn } from '@/lib/utils';
 import { Menu, Undo2, Redo2 } from 'lucide-react';
@@ -491,6 +492,9 @@ function App() {
 
       case 'quotation-requests':
         return <QuotationRequestsPage />;
+
+      case 'public-works':
+        return <PublicWorksPage />;
 
       case 'project-detail':
         const viewingProject = store.projects.find(p => p.id === viewingProjectId);
