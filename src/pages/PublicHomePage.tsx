@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   ArrowRight,
   BarChart3,
@@ -9,7 +9,6 @@ import {
   KanbanSquare,
   Layers3,
   LineChart,
-  LockKeyhole,
   Mail,
   MapPin,
   MessageCircle,
@@ -21,10 +20,6 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react';
-
-interface PublicHomePageProps {
-  onLoginClick: () => void;
-}
 
 const capabilities = [
   { title: 'Company Website', text: 'เว็บไซต์บริษัท หน้าโปรไฟล์บริการ และ landing page ที่พร้อมต่อยอดเป็นระบบจริง', icon: MonitorCog },
@@ -48,7 +43,7 @@ const faqs = [
   'รองรับ LINE OA, payment หรือ dashboard ไหม?',
 ];
 
-export function PublicHomePage({ onLoginClick }: PublicHomePageProps) {
+export function PublicHomePage() {
   const [quotationForm, setQuotationForm] = useState({
     fullName: '',
     company: '',
@@ -102,6 +97,17 @@ export function PublicHomePage({ onLoginClick }: PublicHomePageProps) {
       setQuotationMessage(error instanceof Error ? error.message : 'ไม่สามารถส่งคำขอใบเสนอราคาได้');
     }
   };
+  useEffect(() => {
+    // If there is no specific hash, automatically scroll to `#work` on mount
+    if (!window.location.hash) {
+      setTimeout(() => {
+        const element = document.getElementById('work');
+        if (element) {
+          element.scrollIntoView({ behavior: 'auto' });
+        }
+      }, 80);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0b0d0f] text-white selection:bg-[#ff6b35] selection:text-white">
@@ -124,14 +130,7 @@ export function PublicHomePage({ onLoginClick }: PublicHomePageProps) {
             <a className="transition hover:text-white" href="#faq">FAQ</a>
           </nav>
 
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/12 bg-white/[0.04] px-3 text-sm font-medium text-white transition hover:border-[#ff6b35]/70 hover:bg-[#ff6b35]/12"
-          >
-            <LockKeyhole className="h-4 w-4" />
-            เข้าหลังบ้าน
-          </button>
+          <div className="w-[102px] md:block hidden"></div>
         </div>
       </header>
 

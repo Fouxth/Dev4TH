@@ -69,7 +69,11 @@ function App() {
   const [newProjectName, setNewProjectName] = useState('');
   const [myTasksProjectFilter, setMyTasksProjectFilter] = useState<string>('all');
   const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState(() => {
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    return path === '/login' || path === '/admin' || hash === '#login';
+  });
   const isMobile = useIsMobile();
 
   const store = useStore();
@@ -77,6 +81,39 @@ function App() {
   const { currentUser: authUser, token, isLoading: authLoading, logout, refreshUser } = useAuth();
   const alerts = useAlerts();
   const chatHook = useChats({ token, currentUserId: authUser?.id ?? '' });
+
+  // Listen to browser navigation / URL pathname for login routing
+  useEffect(() => {
+    const handleLocationChange = () => {
+      const path = window.location.pathname;
+      const hash = window.location.hash;
+      if (path === '/login' || path === '/admin' || hash === '#login') {
+        setShowLogin(true);
+      } else {
+        setShowLogin(false);
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, []);
+
+  // Redirect to / when logged in
+  useEffect(() => {
+    if (authUser && (window.location.pathname === '/login' || window.location.pathname === '/admin')) {
+      window.history.pushState({}, '', '/');
+    }
+  }, [authUser]);
+
+  const handleLogout = () => {
+    logout();
+    window.history.pushState({}, '', '/');
+    setShowLogin(false);
+  };
 
   // Notification prefs — persisted in localStorage
   const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(() => {
@@ -201,7 +238,7 @@ function App() {
 
   // Not logged in → Show login page
   if (!authUser) {
-    return showLogin ? <LoginPage /> : <PublicHomePage onLoginClick={() => setShowLogin(true)} />;
+    return showLogin ? <LoginPage /> : <PublicHomePage />;
   }
 
   // Loading data
@@ -613,7 +650,7 @@ function App() {
         currentUser={authUser}
         activeView={activeView}
         onViewChange={(view) => { setActiveView(view); if (isMobile) setSidebarOpen(false); }}
-        onLogout={logout}
+        onLogout={handleLogout}
         isMobile={isMobile}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
