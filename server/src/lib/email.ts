@@ -12,6 +12,11 @@ interface EmailOptions {
     to: string;
     subject: string;
     html: string;
+    attachments?: Array<{
+        filename: string;
+        content: any;
+        contentType?: string;
+    }>;
 }
 
 const SMTP_HOST = process.env.SMTP_HOST || '';
@@ -51,13 +56,13 @@ async function getTransporter() {
     }
 }
 
-export async function sendEmail({ to, subject, html }: EmailOptions): Promise<boolean> {
+export async function sendEmail({ to, subject, html, attachments }: EmailOptions): Promise<boolean> {
     try {
         const transport = await getTransporter();
 
         if (!transport) {
             // Fallback: log to console
-            console.log(`📧 [EMAIL] To: ${to} | Subject: ${subject}`);
+            console.log(`📧 [EMAIL] To: ${to} | Subject: ${subject} | Has attachments: ${!!attachments}`);
             console.log(`📧 [EMAIL] Body preview: ${html.replace(/<[^>]*>/g, '').substring(0, 200)}`);
             return true;
         }
@@ -67,6 +72,7 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<bo
             to,
             subject,
             html,
+            attachments,
         });
         console.log(`📧 Email sent to ${to}: ${subject}`);
         return true;

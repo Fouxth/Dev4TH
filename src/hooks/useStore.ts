@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '@/lib/socketUrl';
 import type {
   User, Team, Project, Task, CalendarEvent, Activity, Sprint,
   TaskStatus, TaskFilter, DashboardStats, TimeEntry
@@ -131,7 +132,7 @@ export const useStore = () => {
     const token = getAuthToken();
     if (!token) return;
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://nut-commands-reviewed-rolls.trycloudflare.com';
+    const socketUrl = getSocketUrl();
     const socket = io(socketUrl, {
       auth: { token },
       transports: ['websocket', 'polling'],

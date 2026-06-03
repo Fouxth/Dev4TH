@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/lib/socketUrl';
 
 export interface Notification {
     id: string;
@@ -104,7 +105,7 @@ export function useNotifications({ token, prefs, onNotification }: UseNotificati
     useEffect(() => {
         if (!token) return;
 
-        const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://nut-commands-reviewed-rolls.trycloudflare.com';
+        const socketUrl = getSocketUrl();
         const socket = io(socketUrl, {
             auth: { token },
             transports: ['websocket', 'polling'],

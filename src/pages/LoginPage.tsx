@@ -1,18 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
-import { Code2, Eye, EyeOff, Loader2, Lock, Mail, User, Briefcase, Building2 } from 'lucide-react';
+import { Code2, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react';
 
 export function LoginPage() {
-    const { login, register } = useAuth();
+    const { login } = useAuth();
     const { t } = useLanguage();
-    const [mode, setMode] = useState<'login' | 'register'>('login');
-    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPw, setConfirmPw] = useState('');
-    const [role, setRole] = useState('developer');
-    const [department, setDepartment] = useState('');
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -20,17 +15,9 @@ export function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        if (mode === 'register' && password !== confirmPw) {
-            setError(t.login.passwordMismatch);
-            return;
-        }
         setLoading(true);
         try {
-            if (mode === 'login') {
-                await login(email, password);
-            } else {
-                await register(name, email, password, role, department || undefined);
-            }
+            await login(email, password);
         } catch (err) {
             setError(err instanceof Error ? err.message : t.login.error);
         } finally {
@@ -59,45 +46,11 @@ export function LoginPage() {
 
                 {/* Card */}
                 <div className="bg-[#111] border border-white/8 rounded-2xl p-5 sm:p-8 shadow-2xl backdrop-blur-sm">
-                    {/* Tabs */}
-                    <div className="flex mb-6 bg-white/5 rounded-lg p-1">
-                        <button
-                            onClick={() => setMode('login')}
-                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'login' ? 'bg-[#ff6b35] text-white' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            {t.login.loginTab}
-                        </button>
-                        <button
-                            onClick={() => setMode('register')}
-                            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'register' ? 'bg-[#ff6b35] text-white' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            {t.login.registerTab}
-                        </button>
-                    </div>
-
                     <h2 className="text-xl font-semibold text-white mb-6 text-center">
-                        {mode === 'login' ? t.login.title : t.login.registerTitle}
+                        {t.login.title}
                     </h2>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Name (register only) */}
-                        {mode === 'register' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t.login.name}</label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <input
-                                        type="text"
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        required
-                                        placeholder={t.login.namePlaceholder}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35] transition-colors"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
                         {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1.5">{t.login.email}</label>
@@ -133,65 +86,6 @@ export function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Confirm Password (register only) */}
-                        {mode === 'register' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t.login.confirmPassword}</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <input
-                                        type={showPw ? 'text' : 'password'}
-                                        value={confirmPw}
-                                        onChange={e => setConfirmPw(e.target.value)}
-                                        required
-                                        placeholder="••••••••"
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35] transition-colors"
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Role (register only) */}
-                        {mode === 'register' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t.login.role}</label>
-                                <div className="relative">
-                                    <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <select
-                                        value={role}
-                                        onChange={e => setRole(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35] transition-colors appearance-none cursor-pointer [&>option]:bg-[#1a1a1a] [&>option]:text-white"
-                                    >
-                                        <option value="developer">{t.login.roleDeveloper}</option>
-                                        <option value="designer">{t.login.roleDesigner}</option>
-                                        <option value="tester">{t.login.roleTester}</option>
-                                        <option value="manager">{t.login.roleManager}</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Department (register only) */}
-                        {mode === 'register' && (
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">{t.login.department}</label>
-                                <div className="relative">
-                                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-                                    <select
-                                        value={department}
-                                        onChange={e => setDepartment(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#ff6b35] focus:ring-1 focus:ring-[#ff6b35] transition-colors appearance-none cursor-pointer [&>option]:bg-[#1a1a1a] [&>option]:text-white"
-                                    >
-                                        <option value="">{t.login.selectDepartment}</option>
-                                        <option value="Engineering">{t.login.deptEngineering}</option>
-                                        <option value="Design">{t.login.deptDesign}</option>
-                                        <option value="QA">{t.login.deptQA}</option>
-                                        <option value="Management">{t.login.deptManagement}</option>
-                                    </select>
-                                </div>
-                            </div>
-                        )}
-
                         {/* Error */}
                         {error && (
                             <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm flex items-center gap-2">
@@ -205,22 +99,12 @@ export function LoginPage() {
                             disabled={loading}
                             className="w-full bg-gradient-to-r from-[#ff6b35] to-[#ff8c42] text-white font-semibold py-2.5 px-4 rounded-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                         >
-                            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {mode === 'login' ? t.login.loading : t.login.registering}</> : mode === 'login' ? t.login.submit : t.login.registerSubmit}
+                            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> {t.login.loading}</> : t.login.submit}
                         </button>
                     </form>
-
-
-
-                    {/* Switch mode link */}
-                    <div className="mt-4 text-center">
-                        <button
-                            type="button"
-                            onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
-                            className="text-xs text-gray-400 hover:text-[#ff6b35] transition-colors"
-                        >
-                            {mode === 'login' ? t.login.noAccount : t.login.hasAccount}
-                        </button>
-                    </div>
+                    <p className="mt-5 text-center text-xs leading-5 text-gray-500">
+                        บัญชีผู้ใช้สร้างโดยผู้ดูแลระบบเท่านั้น
+                    </p>
                 </div>
             </div>
         </div>

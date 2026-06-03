@@ -24,9 +24,11 @@ import { useKeyboardShortcuts, KeyboardShortcutsDialog } from '@/hooks/useKeyboa
 import { useLanguage } from '@/i18n/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginPage } from '@/pages/LoginPage';
+import { PublicHomePage } from '@/pages/PublicHomePage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ProjectDetailPage } from '@/pages/ProjectDetailPage';
+import { QuotationRequestsPage } from '@/pages/QuotationRequestsPage';
 import type { Task, TaskStatus, TaskFilter, User } from '@/types';
 import { cn } from '@/lib/utils';
 import { Menu, Undo2, Redo2 } from 'lucide-react';
@@ -67,6 +69,7 @@ function App() {
   const [newProjectName, setNewProjectName] = useState('');
   const [myTasksProjectFilter, setMyTasksProjectFilter] = useState<string>('all');
   const [viewingProjectId, setViewingProjectId] = useState<string | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
   const isMobile = useIsMobile();
 
   const store = useStore();
@@ -197,7 +200,9 @@ function App() {
   }
 
   // Not logged in → Show login page
-  if (!authUser) return <LoginPage />;
+  if (!authUser) {
+    return showLogin ? <LoginPage /> : <PublicHomePage onLoginClick={() => setShowLogin(true)} />;
+  }
 
   // Loading data
   if (store.loading) {
@@ -433,6 +438,9 @@ function App() {
             }}
           />
         );
+
+      case 'quotation-requests':
+        return <QuotationRequestsPage />;
 
       case 'project-detail':
         const viewingProject = store.projects.find(p => p.id === viewingProjectId);

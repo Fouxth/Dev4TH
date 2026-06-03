@@ -187,6 +187,23 @@ export interface DashboardStats {
   overdueTasks: number;
 }
 
+export interface QuotationRequest {
+  id: string;
+  fullName: string;
+  company?: string;
+  email: string;
+  phone: string;
+  systemType: string;
+  budgetRange?: string;
+  scopeNotes: string;
+  pdpaConsent: boolean;
+  marketingConsent: boolean;
+  status: 'new' | 'reviewing' | 'quoted' | 'closed';
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface KanbanColumn {
   id: TaskStatus;
   title: string;

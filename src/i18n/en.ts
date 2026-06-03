@@ -274,6 +274,7 @@ const en: Translations = {
             language: 'Language',
             notifications: 'Notifications',
             security: 'Security',
+            quotation: 'Document Settings',
         },
         profile: {
             name: 'Full Name',

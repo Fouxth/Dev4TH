@@ -20,6 +20,11 @@ import { profileRouter } from './routes/profile.js';
 import { attachmentsRouter } from './routes/attachments.js';
 import { sprintsRouter } from './routes/sprints.js';
 import { chatsRouter } from './routes/chats.js';
+import { publicRouter } from './routes/public.js';
+import { quotationRequestsRouter } from './routes/quotationRequests.js';
+import { systemSettingsRouter } from './routes/systemSettings.js';
+import { quotationsRouter } from './routes/quotations.js';
+import { invoicesRouter } from './routes/invoices.js';
 import { setIO } from './lib/socket.js';
 import { checkUpcomingDeadlines } from './lib/email.js';
 import { authenticate } from './middleware/auth.js';
@@ -38,8 +43,11 @@ const io = new SocketIOServer(httpServer, {
     cors: {
         origin: [
             'http://localhost:5173',
+            'http://127.0.0.1:5173',
             'http://localhost:5174',
+            'http://127.0.0.1:5174',
             'http://localhost:4173',
+            'http://127.0.0.1:4173',
             'https://dxv4th.vercel.app',
             /\.vercel\.app$/,
             /\.trycloudflare\.com$/
@@ -114,8 +122,11 @@ const apiLimiter = rateLimit({
 app.use(cors({
     origin: [
         'http://localhost:5173',
+        'http://127.0.0.1:5173',
         'http://localhost:5174',
+        'http://127.0.0.1:5174',
         'http://localhost:4173',
+        'http://127.0.0.1:4173',
         'https://dxv4th.vercel.app',
         /\.vercel\.app$/
     ],
@@ -131,7 +142,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
 
 // Routes — auth is public, everything else is protected
-app.use('/api/auth', authLimiter, authRouter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth', authRouter);
+app.use('/api/public', publicRouter);
+app.use('/api/quotation-requests', authenticate, quotationRequestsRouter);
+app.use('/api/quotations', authenticate, quotationsRouter);
+app.use('/api/invoices', authenticate, invoicesRouter);
+app.use('/api/system-settings', authenticate, systemSettingsRouter);
 app.use('/api/users', authenticate, usersRouter);
 app.use('/api/projects', authenticate, projectsRouter);
 app.use('/api/teams', authenticate, teamsRouter);

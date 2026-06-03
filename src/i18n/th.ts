@@ -272,6 +272,7 @@ const th = {
             language: 'ภาษา',
             notifications: 'แจ้งเตือน',
             security: 'ความปลอดภัย',
+            quotation: 'ตั้งค่าเอกสาร',
         },
         profile: {
             name: 'ชื่อ-นามสกุล',

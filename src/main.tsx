@@ -9,8 +9,9 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import './index.css'
 import App from './App.tsx'
 
-// Register Service Worker for PWA
-if ('serviceWorker' in navigator) {
+// Register Service Worker for PWA only in production.
+// In dev, an old SW can keep serving stale bundles and stale socket URLs.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
@@ -20,6 +21,16 @@ if ('serviceWorker' in navigator) {
         console.log('SW registration failed:', error);
       });
   });
+}
+
+if ('serviceWorker' in navigator && import.meta.env.DEV) {
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .then(() => caches.keys())
+    .then((cacheNames) => Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName))))
+    .catch((error) => {
+      console.log('SW cleanup failed:', error);
+    });
 }
 
 createRoot(document.getElementById('root')!).render(
@@ -38,4 +49,3 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 )
-

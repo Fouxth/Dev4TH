@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/i18n/LanguageContext';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/lib/socketUrl';
 
 interface CommentUser {
     id: string;
@@ -60,7 +61,7 @@ export function CommentSection({ taskId }: CommentSectionProps) {
     // Real-time comments via socket
     useEffect(() => {
         if (!taskId || !token) return;
-        const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://nut-commands-reviewed-rolls.trycloudflare.com';
+        const socketUrl = getSocketUrl();
         const socket: Socket = io(socketUrl, { auth: { token }, transports: ['polling'], path: '/socket.io' });
 
         socket.on(`task:${taskId}:comment`, (comment: Comment) => {

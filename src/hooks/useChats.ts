@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getSocketUrl } from '@/lib/socketUrl';
 import type { Chat, ChatMessage } from '@/types';
 
 interface UseChatsOptions {
@@ -211,7 +212,7 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
     useEffect(() => {
         if (!token) return;
 
-        const url = import.meta.env.VITE_SOCKET_URL || 'https://nut-commands-reviewed-rolls.trycloudflare.com';
+        const url = getSocketUrl();
         const socket = io(url, {
             auth: { token },
             transports: ['websocket', 'polling'],
