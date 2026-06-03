@@ -32,7 +32,7 @@ import { JWT_SECRET } from './lib/config.js';
 
 const app = express();
 const httpServer = createServer(app);
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 2004;
 
 // Trust proxy for proper IP detection behind load balancers
 // Set to 1 to trust the first proxy (for development/single proxy)
