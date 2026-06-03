@@ -149,6 +149,7 @@ export function PublicHomePage() {
   };
 
   // --- Quote builder states ---
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [quotationForm, setQuotationForm] = useState({
     fullName: '',
     company: '',
@@ -164,6 +165,31 @@ export function PublicHomePage() {
   const [quotationStatus, setQuotationStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [quotationMessage, setQuotationMessage] = useState('');
 
+  const nextStep = () => {
+    if (formStep === 1) {
+      if (!quotationForm.fullName || !quotationForm.email || !quotationForm.phone) {
+        setQuotationStatus('error');
+        setQuotationMessage('กรุณากรอกข้อมูลติดต่อที่จำเป็น (*) ให้ครบถ้วน');
+        return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(quotationForm.email)) {
+        setQuotationStatus('error');
+        setQuotationMessage('กรุณากรอกรูปแบบอีเมลที่ถูกต้อง');
+        return;
+      }
+    }
+    setQuotationStatus('idle');
+    setQuotationMessage('');
+    setFormStep((prev) => (prev + 1) as 2 | 3);
+  };
+
+  const prevStep = () => {
+    setQuotationStatus('idle');
+    setQuotationMessage('');
+    setFormStep((prev) => (prev - 1) as 1 | 2);
+  };
+
   const updateQuotationField = (field: keyof typeof quotationForm, value: string | boolean) => {
     setQuotationForm((prev) => ({ ...prev, [field]: value }));
   };
@@ -173,6 +199,7 @@ export function PublicHomePage() {
       ...prev,
       systemType: systemName
     }));
+    setFormStep(1);
     navigateToTab('contact');
   };
 
@@ -208,6 +235,7 @@ export function PublicHomePage() {
 
       setQuotationStatus('success');
       setQuotationMessage('ส่งคำขอใบเสนอราคาสำเร็จ! ทีมงานจะติดต่อกลับโดยเร็วที่สุด');
+      setFormStep(1);
       setQuotationForm({
         fullName: '',
         company: '',
@@ -702,16 +730,42 @@ export function PublicHomePage() {
           {/* Progress Indicators */}
           <div className="mb-8 grid grid-cols-3 gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/[0.02]">
             {[
-              ['01', 'ข้อมูลติดต่อ'],
-              ['02', 'ระบุความสนใจ'],
-              ['03', 'ขอบเขตข้อมููล'],
-            ].map(([step, label]) => {
-              const isFirstStep = step === '01';
+              [1, '01', 'ข้อมูลติดต่อ'],
+              [2, '02', 'ระบุความสนใจ'],
+              [3, '03', 'ขอบเขตข้อมูล'],
+            ].map(([stepNum, stepCode, label]) => {
+              const isActive = formStep === stepNum;
+              const isCompleted = formStep > (stepNum as number);
               return (
-                <div key={step} className="border-r border-white/5 px-4 py-3 last:border-r-0 text-center">
-                  <span className={`font-mono text-[10px] font-black ${isFirstStep ? 'text-[#ff6b35]' : 'text-white/30'}`}>{step}</span>
-                  <p className="mt-0.5 text-xs font-bold text-white/70">{label}</p>
-                </div>
+                <button
+                  key={stepCode}
+                  type="button"
+                  onClick={() => {
+                    if (stepNum === 1) {
+                      setFormStep(1);
+                    } else if (stepNum === 2 && (quotationForm.fullName && quotationForm.email && quotationForm.phone)) {
+                      setFormStep(2);
+                    } else if (stepNum === 3 && (quotationForm.fullName && quotationForm.email && quotationForm.phone)) {
+                      setFormStep(3);
+                    }
+                  }}
+                  className={`px-2 py-3 text-center border-r border-white/5 last:border-r-0 transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-[#ff6b35]/20 text-[#ffb199] border-b-2 border-b-[#ff6b35]' 
+                      : isCompleted 
+                        ? 'text-green-400 bg-white/[0.01]' 
+                        : 'text-white/30 hover:bg-white/[0.01] hover:text-white/50'
+                  }`}
+                >
+                  <span className={`font-mono text-[10px] font-black ${
+                    isActive ? 'text-[#ff6b35]' : isCompleted ? 'text-green-400' : 'text-white/20'
+                  }`}>
+                    {isCompleted ? '✓' : stepCode}
+                  </span>
+                  <p className={`mt-0.5 text-xs font-bold ${
+                    isActive ? 'text-white' : isCompleted ? 'text-white/70' : 'text-white/40'
+                  }`}>{label as string}</p>
+                </button>
               );
             })}
           </div>
@@ -719,140 +773,192 @@ export function PublicHomePage() {
           <form onSubmit={submitQuotationRequest} className="space-y-4">
             
             {/* Step 1: Basic Info */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ชื่อ-นามสกุลผู้ติดต่อ <span className="text-[#ff8c42]">*</span></span>
-                <input
-                  type="text"
-                  required
-                  value={quotationForm.fullName}
-                  onChange={(event) => updateQuotationField('fullName', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
-                  placeholder="เช่น คุณสมชาย ใจดี"
-                />
-              </label>
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ชื่อบริษัท / องค์กร</span>
-                <input
-                  type="text"
-                  value={quotationForm.company}
-                  onChange={(event) => updateQuotationField('company', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
-                  placeholder="เช่น บริษัท แอดวานซ์ เทค จำกัด"
-                />
-              </label>
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">อีเมลสำหรับส่งใบเสนอราคา <span className="text-[#ff8c42]">*</span></span>
-                <input
-                  type="email"
-                  required
-                  value={quotationForm.email}
-                  onChange={(event) => updateQuotationField('email', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
-                  placeholder="you@company.com"
-                />
-              </label>
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">เบอร์โทรศัพท์ผู้ติดต่อ <span className="text-[#ff8c42]">*</span></span>
-                <input
-                  type="text"
-                  required
-                  value={quotationForm.phone}
-                  onChange={(event) => updateQuotationField('phone', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
-                  placeholder="เช่น 085-829-4254"
-                />
-              </label>
-            </div>
+            {formStep === 1 && (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ชื่อ-นามสกุลผู้ติดต่อ <span className="text-[#ff8c42]">*</span></span>
+                    <input
+                      type="text"
+                      required
+                      value={quotationForm.fullName}
+                      onChange={(event) => updateQuotationField('fullName', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
+                      placeholder="เช่น คุณสมชาย ใจดี"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ชื่อบริษัท / องค์กร</span>
+                    <input
+                      type="text"
+                      value={quotationForm.company}
+                      onChange={(event) => updateQuotationField('company', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
+                      placeholder="เช่น บริษัท แอดวานซ์ เทค จำกัด"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">อีเมลสำหรับส่งใบเสนอราคา <span className="text-[#ff8c42]">*</span></span>
+                    <input
+                      type="email"
+                      required
+                      value={quotationForm.email}
+                      onChange={(event) => updateQuotationField('email', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
+                      placeholder="you@company.com"
+                    />
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">เบอร์โทรศัพท์ผู้ติดต่อ <span className="text-[#ff8c42]">*</span></span>
+                    <input
+                      type="text"
+                      required
+                      value={quotationForm.phone}
+                      onChange={(event) => updateQuotationField('phone', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-4 text-sm text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
+                      placeholder="เช่น 085-829-4254"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                  {quotationMessage ? (
+                    <p className="text-xs font-semibold text-red-400">{quotationMessage}</p>
+                  ) : <span />}
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff6b35] px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(255,107,53,0.2)] transition hover:bg-[#ff7d4f] ml-auto"
+                  >
+                    ถัดไป
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Step 2: System interest & Budget */}
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ระบบที่สนใจพัฒนา</span>
-                <select
-                  value={quotationForm.systemType}
-                  onChange={(event) => updateQuotationField('systemType', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#ff6b35] focus:bg-white/[0.05] [&>option]:bg-[#11161a]"
-                >
-                  <option>Custom — ปรึกษากับทีม</option>
-                  <option>Company Website</option>
-                  <option>Ecommerce</option>
-                  <option>Booking System</option>
-                  <option>Admin Dashboard</option>
-                  <option>Automation</option>
-                  {/* Pre-fill option for works */}
-                  {!['Custom — ปรึกษากับทีม', 'Company Website', 'Ecommerce', 'Booking System', 'Admin Dashboard', 'Automation'].includes(quotationForm.systemType) && (
-                    <option>{quotationForm.systemType}</option>
-                  )}
-                </select>
-              </label>
-              <label className="grid gap-2">
-                <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ช่วงงบประมาณประเมิน</span>
-                <select
-                  value={quotationForm.budgetRange}
-                  onChange={(event) => updateQuotationField('budgetRange', event.target.value)}
-                  className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#ff6b35] focus:bg-white/[0.05] [&>option]:bg-[#11161a]"
-                >
-                  <option value="">เลือกช่วงงบที่ต้องการ</option>
-                  <option>น้อยกว่า 30,000 บาท</option>
-                  <option>30,000 - 80,000 บาท</option>
-                  <option>80,000 - 150,000 บาท</option>
-                  <option>150,000 - 300,000 บาท</option>
-                  <option>300,000 - 500,000 บาท</option>
-                  <option>มากกว่า 500,000 บาท</option>
-                </select>
-              </label>
-            </div>
+            {formStep === 2 && (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ระบบที่สนใจพัฒนา</span>
+                    <select
+                      value={quotationForm.systemType}
+                      onChange={(event) => updateQuotationField('systemType', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#ff6b35] focus:bg-white/[0.05] [&>option]:bg-[#11161a]"
+                    >
+                      <option>Custom — ปรึกษากับทีม</option>
+                      <option>Company Website</option>
+                      <option>Ecommerce</option>
+                      <option>Booking System</option>
+                      <option>Admin Dashboard</option>
+                      <option>Automation</option>
+                      {!['Custom — ปรึกษากับทีม', 'Company Website', 'Ecommerce', 'Booking System', 'Admin Dashboard', 'Automation'].includes(quotationForm.systemType) && (
+                        <option>{quotationForm.systemType}</option>
+                      )}
+                    </select>
+                  </label>
+                  <label className="grid gap-2">
+                    <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ช่วงงบประมาณประเมิน</span>
+                    <select
+                      value={quotationForm.budgetRange}
+                      onChange={(event) => updateQuotationField('budgetRange', event.target.value)}
+                      className="h-11 rounded-lg border border-white/10 bg-white/[0.03] px-3 text-sm font-semibold text-white outline-none transition focus:border-[#ff6b35] focus:bg-white/[0.05] [&>option]:bg-[#11161a]"
+                    >
+                      <option value="">เลือกช่วงงบที่ต้องการ</option>
+                      <option>น้อยกว่า 30,000 บาท</option>
+                      <option>30,000 - 80,000 บาท</option>
+                      <option>80,000 - 150,000 บาท</option>
+                      <option>150,000 - 300,000 บาท</option>
+                      <option>300,000 - 500,000 บาท</option>
+                      <option>มากกว่า 500,000 บาท</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div className="flex justify-between items-center pt-4 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-6 text-sm font-bold text-white transition hover:bg-white/[0.05]"
+                  >
+                    ย้อนกลับ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff6b35] px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(255,107,53,0.2)] transition hover:bg-[#ff7d4f]"
+                  >
+                    ถัดไป
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Step 3: Scope Notes */}
-            <label className="grid gap-2">
-              <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ความต้องการ / รายละเอียดเพิ่มเติม</span>
-              <textarea
-                value={quotationForm.scopeNotes}
-                onChange={(event) => updateQuotationField('scopeNotes', event.target.value)}
-                className="min-h-[120px] resize-none rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
-                placeholder="อธิบายสรุปไอเดียฟังก์ชัน ระบบที่จะใช้ คีย์แมนที่ต้องการ ให้ทีมช่วยประเมินขอบเขต"
-              />
-            </label>
+            {formStep === 3 && (
+              <div className="space-y-4">
+                <label className="grid gap-2">
+                  <span className="text-xs font-bold text-white/70 uppercase tracking-wider">ความต้องการ / รายละเอียดเพิ่มเติม</span>
+                  <textarea
+                    value={quotationForm.scopeNotes}
+                    onChange={(event) => updateQuotationField('scopeNotes', event.target.value)}
+                    className="min-h-[120px] resize-none rounded-lg border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-white outline-none transition placeholder:text-white/20 focus:border-[#ff6b35] focus:bg-white/[0.05]"
+                    placeholder="อธิบายสรุปไอเดียฟังก์ชัน ระบบที่จะใช้ คีย์แมนที่ต้องการ ให้ทีมช่วยประเมินขอบเขต"
+                  />
+                </label>
 
-            {/* Consents & Submit */}
-            <div className="pt-4 border-t border-white/10 space-y-3">
-              <label className="flex items-start gap-3 text-xs leading-5 text-white/50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={quotationForm.pdpaConsent}
-                  onChange={(event) => updateQuotationField('pdpaConsent', event.target.checked)}
-                  className="mt-0.5 h-4.5 w-4.5 rounded border-white/20 bg-white/[0.03] accent-[#ff6b35]"
-                />
-                <span>ยินยอมให้เก็บข้อมูลส่วนบุคคลตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA) เพื่อใช้ติดต่อกลับเสนอราคา</span>
-              </label>
-              <label className="flex items-start gap-3 text-xs leading-5 text-white/50 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={quotationForm.marketingConsent}
-                  onChange={(event) => updateQuotationField('marketingConsent', event.target.checked)}
-                  className="mt-0.5 h-4.5 w-4.5 rounded border-white/20 bg-white/[0.03] accent-[#ff6b35]"
-                />
-                <span>ยินยอมรับข่าวสาร อัปเดตแพลตฟอร์ม และข้อเสนออื่น ๆ เพิ่มเติม</span>
-              </label>
+                {/* Consents & Submit */}
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <label className="flex items-start gap-3 text-xs leading-5 text-white/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={quotationForm.pdpaConsent}
+                      onChange={(event) => updateQuotationField('pdpaConsent', event.target.checked)}
+                      className="mt-0.5 h-4.5 w-4.5 rounded border-white/20 bg-white/[0.03] accent-[#ff6b35]"
+                    />
+                    <span>ยินยอมให้เก็บข้อมูลส่วนบุคคลตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล (PDPA) เพื่อใช้ติดต่อกลับเสนอราคา <span className="text-[#ff8c42]">*</span></span>
+                  </label>
+                  <label className="flex items-start gap-3 text-xs leading-5 text-white/50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={quotationForm.marketingConsent}
+                      onChange={(event) => updateQuotationField('marketingConsent', event.target.checked)}
+                      className="mt-0.5 h-4.5 w-4.5 rounded border-white/20 bg-white/[0.03] accent-[#ff6b35]"
+                    />
+                    <span>ยินยอมรับข่าวสาร อัปเดตแพลตฟอร์ม และข้อเสนออื่น ๆ เพิ่มเติม</span>
+                  </label>
 
-              <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                {quotationMessage ? (
-                  <p className={`text-xs font-semibold ${quotationStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-                    {quotationMessage}
-                  </p>
-                ) : <span />}
-                
-                <button
-                  type="submit"
-                  disabled={quotationStatus === 'submitting'}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff6b35] px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(255,107,53,0.2)] transition hover:bg-[#ff7d4f] disabled:opacity-60 shrink-0"
-                >
-                  {quotationStatus === 'submitting' ? 'กำลังส่งข้อมูล...' : 'ส่งคำขอใบเสนอราคา'}
-                  <Send className="h-3.5 w-3.5" />
-                </button>
+                  <div className="flex flex-col gap-3 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                    {quotationMessage ? (
+                      <p className={`text-xs font-semibold ${quotationStatus === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                        {quotationMessage}
+                      </p>
+                    ) : <span />}
+                    
+                    <div className="flex gap-2 ml-auto">
+                      <button
+                        type="button"
+                        onClick={prevStep}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.02] px-6 text-sm font-bold text-white transition hover:bg-white/[0.05]"
+                      >
+                        ย้อนกลับ
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={quotationStatus === 'submitting'}
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff6b35] px-6 text-sm font-bold text-white shadow-[0_8px_24px_rgba(255,107,53,0.2)] transition hover:bg-[#ff7d4f] disabled:opacity-60 shrink-0"
+                      >
+                        {quotationStatus === 'submitting' ? 'กำลังส่งข้อมูล...' : 'ส่งคำขอใบเสนอราคา'}
+                        <Send className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
           </form>
         </div>
