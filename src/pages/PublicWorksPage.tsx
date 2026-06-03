@@ -212,23 +212,51 @@ export function PublicWorksPage() {
       const suggestedStack = allStackList.join(' · ');
       const suggestedTags = allStackList;
 
-      setAnalysisResult({
+      const newAnalysis = {
         language: primaryLang,
         frameworks,
         databases,
         suggestedStack,
         suggestedTags
-      });
+      };
+
+      setAnalysisResult(newAnalysis);
+
+      // Autofill values immediately
+      setName(repoName);
+      setGithubUrl(repo.html_url);
+      setStack(suggestedStack);
+      setTagsInput(suggestedTags.join(', '));
+      
+      const generatedDesc = generateProjectDescription(repoName, newAnalysis);
+      const finalDesc = repo.description 
+        ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
+        : generatedDesc;
+      setText(finalDesc);
 
     } catch (err) {
       console.error('Analysis error:', err);
-      setAnalysisResult({
+      const fallbackAnalysis = {
         language: repo.language || 'JavaScript',
         frameworks: [],
         databases: [],
         suggestedStack: repo.language || 'JavaScript',
         suggestedTags: repo.language ? [repo.language] : []
-      });
+      };
+
+      setAnalysisResult(fallbackAnalysis);
+
+      // Autofill fallback values immediately
+      setName(repoName);
+      setGithubUrl(repo.html_url);
+      setStack(fallbackAnalysis.suggestedStack);
+      setTagsInput(fallbackAnalysis.suggestedTags.join(', '));
+      
+      const generatedDesc = generateProjectDescription(repoName, fallbackAnalysis);
+      const finalDesc = repo.description 
+        ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
+        : generatedDesc;
+      setText(finalDesc);
     } finally {
       setAnalyzingRepo(false);
     }
