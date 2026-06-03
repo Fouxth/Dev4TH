@@ -23,7 +23,7 @@ publicWorksRouter.get('/', async (_req, res) => {
 // POST /api/public-works
 publicWorksRouter.post('/', async (req, res) => {
     try {
-        const { name, type, industry, stack, tags, text, featured } = req.body;
+        const { name, type, industry, stack, tags, text, featured, githubUrl } = req.body;
         
         if (!name || !type || !industry || !stack || !text) {
             res.status(400).json({ error: 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน' });
@@ -38,7 +38,8 @@ publicWorksRouter.post('/', async (req, res) => {
                 stack,
                 tags: Array.isArray(tags) ? tags : [],
                 text,
-                featured: Boolean(featured)
+                featured: Boolean(featured),
+                githubUrl: githubUrl || null
             }
         });
 
@@ -52,7 +53,7 @@ publicWorksRouter.post('/', async (req, res) => {
 // PUT /api/public-works/:id
 publicWorksRouter.put('/:id', async (req, res) => {
     try {
-        const { name, type, industry, stack, tags, text, featured } = req.body;
+        const { name, type, industry, stack, tags, text, featured, githubUrl } = req.body;
         const { id } = req.params;
 
         if (!name || !type || !industry || !stack || !text) {
@@ -69,7 +70,8 @@ publicWorksRouter.put('/:id', async (req, res) => {
                 stack,
                 tags: Array.isArray(tags) ? tags : [],
                 text,
-                featured: Boolean(featured)
+                featured: Boolean(featured),
+                githubUrl: githubUrl || null
             }
         });
 
