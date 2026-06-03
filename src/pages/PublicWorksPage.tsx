@@ -74,6 +74,82 @@ const generateProjectDescription = (repoName: string, analysis: { language: stri
   return `${category} ที่ออกแบบมาอย่างครบครัน ${stackDetails} ${dbDetails}`;
 };
 
+const fetchReadmeContent = async (repoName: string, defaultBranch: string): Promise<string> => {
+  const fileNames = ['README.md', 'README.MD', 'readme.md'];
+  for (const fileName of fileNames) {
+    try {
+      const res = await fetch(`https://raw.githubusercontent.com/Fouxth/${repoName}/${defaultBranch}/${fileName}`);
+      if (res.ok) {
+        return await res.text();
+      }
+    } catch (e) {
+      // Ignore and try next
+    }
+  }
+  return '';
+};
+
+const extractReadmeSummary = (readmeText: string): string => {
+  if (!readmeText) return '';
+  
+  // Split into lines
+  const lines = readmeText.split('\n');
+  const paragraphs: string[] = [];
+  
+  // We want to skip headers and code blocks, and grab paragraphs that look like overview descriptions
+  let inCodeBlock = false;
+  
+  for (let line of lines) {
+    line = line.trim();
+    if (line.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      continue;
+    }
+    if (inCodeBlock) continue;
+    
+    // Skip headers
+    if (line.startsWith('#')) {
+      continue;
+    }
+    
+    // Skip empty lines
+    if (!line) continue;
+    
+    // Skip installation details or license notes (words like "install", "npm", "yarn", "setup", "การติดตั้ง", "วิธีใช้")
+    const lowerLine = line.toLowerCase();
+    if (
+      lowerLine.includes('install') || 
+      lowerLine.includes('npm install') || 
+      lowerLine.includes('setup') || 
+      lowerLine.includes('การติดตั้ง') || 
+      lowerLine.includes('วิธีติดตั้ง') ||
+      lowerLine.includes('วิธีใช้งาน') ||
+      lowerLine.includes('การใช้งาน')
+    ) {
+      break; // Stop taking paragraphs once setup/usage starts
+    }
+    
+    // Clean markdown characters from the paragraph
+    const cleanLine = line
+      .replace(/\*\*+/g, '') // remove **
+      .replace(/\*+/g, '')   // remove *
+      .replace(/`+/g, '')    // remove `
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // remove links [text](url) -> text
+      .trim();
+      
+    if (cleanLine.length > 10) {
+      paragraphs.push(cleanLine);
+    }
+    
+    // Grab at most 3 descriptive paragraphs
+    if (paragraphs.length >= 3) {
+      break;
+    }
+  }
+  
+  return paragraphs.join('\n\n');
+};
+
 export function PublicWorksPage() {
   const [works, setWorks] = useState<PublicWork[]>([]);
   const [loading, setLoading] = useState(true);
@@ -247,10 +323,15 @@ export function PublicWorksPage() {
       setStack(suggestedStack);
       setTagsInput(suggestedTags.join(', '));
       
+      const readmeText = await fetchReadmeContent(repoName, defaultBranch);
+      const readmeSummary = extractReadmeSummary(readmeText);
       const generatedDesc = generateProjectDescription(repoName, newAnalysis);
-      const finalDesc = repo.description 
-        ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
-        : generatedDesc;
+      
+      const finalDesc = readmeSummary && readmeSummary.trim().length > 20
+        ? readmeSummary
+        : (repo.description 
+          ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
+          : generatedDesc);
       setText(finalDesc);
 
     } catch (err) {
@@ -271,10 +352,16 @@ export function PublicWorksPage() {
       setStack(fallbackAnalysis.suggestedStack);
       setTagsInput(fallbackAnalysis.suggestedTags.join(', '));
       
+      const defaultBranch = repo.default_branch || 'main';
+      const readmeText = await fetchReadmeContent(repoName, defaultBranch);
+      const readmeSummary = extractReadmeSummary(readmeText);
       const generatedDesc = generateProjectDescription(repoName, fallbackAnalysis);
-      const finalDesc = repo.description 
-        ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
-        : generatedDesc;
+      
+      const finalDesc = readmeSummary && readmeSummary.trim().length > 20
+        ? readmeSummary
+        : (repo.description 
+          ? `${generatedDesc}\n\n(รายละเอียดเพิ่มเติม: ${repo.description})`
+          : generatedDesc);
       setText(finalDesc);
     } finally {
       setAnalyzingRepo(false);
