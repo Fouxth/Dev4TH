@@ -26,7 +26,12 @@ import {
   Menu,
   X,
   Layers,
-  Cpu
+  Cpu,
+  Github,
+  GitFork,
+  Star,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 
 const capabilities = [
@@ -114,8 +119,22 @@ const faqItems = [
   }
 ];
 
+interface GitHubRepo {
+  id: number;
+  name: string;
+  html_url: string;
+  description: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  language: string | null;
+  updated_at: string;
+}
+
 export function PublicHomePage() {
   const [portfolioWorks, setPortfolioWorks] = useState(works);
+  const [activeWorksSource, setActiveWorksSource] = useState<'database' | 'github'>('database');
+  const [githubRepos, setGithubRepos] = useState<GitHubRepo[]>([]);
+  const [loadingGithub, setLoadingGithub] = useState(false);
 
   useEffect(() => {
     const fetchPublicWorks = async () => {
@@ -134,6 +153,43 @@ export function PublicHomePage() {
     };
     fetchPublicWorks();
   }, []);
+
+  useEffect(() => {
+    if (activeWorksSource === 'github' && githubRepos.length === 0) {
+      const fetchGithubRepos = async () => {
+        setLoadingGithub(true);
+        try {
+          const res = await fetch('https://api.github.com/users/Fouxth/repos?sort=updated&per_page=30');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
+              // Exclude forks to display original creations
+              setGithubRepos(data.filter((repo: any) => !repo.fork));
+            }
+          }
+        } catch (err) {
+          console.error('Failed to load GitHub repositories:', err);
+        } finally {
+          setLoadingGithub(false);
+        }
+      };
+      fetchGithubRepos();
+    }
+  }, [activeWorksSource, githubRepos.length]);
+
+  const getLanguagesForGithub = () => {
+    const langs = new Set<string>();
+    githubRepos.forEach(repo => {
+      if (repo.language) langs.add(repo.language);
+    });
+    return ['All', ...Array.from(langs)];
+  };
+
+  const handleSourceChange = (source: 'database' | 'github') => {
+    setActiveWorksSource(source);
+    setSelectedTech('All');
+    setSearchQuery('');
+  };
 
   const [currentTab, setCurrentTab] = useState<'home' | 'works' | 'contact'>(() => {
     const path = window.location.pathname;
@@ -261,6 +317,17 @@ export function PublicHomePage() {
     const matchesTech = selectedTech === 'All' || work.tags.includes(selectedTech);
 
     return matchesSearch && matchesIndustry && matchesTech;
+  });
+
+  const filteredGithubRepos = githubRepos.filter((repo) => {
+    const matchesSearch =
+      repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (repo.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (repo.language || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesTech = selectedTech === 'All' || repo.language === selectedTech;
+
+    return matchesSearch && matchesTech;
   });
 
   // --- FAQ Accordion State ---
@@ -520,7 +587,7 @@ export function PublicHomePage() {
   const renderWorks = () => (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       {/* Title */}
-      <div className="max-w-3xl mb-12">
+      <div className="max-w-3xl mb-8">
         <div className="inline-flex items-center gap-2 rounded-full border border-[#00d4ff]/40 bg-[#00d4ff]/10 px-3 py-1 text-xs text-[#86eaff] font-bold">
           <Cpu className="h-3.5 w-3.5" />
           Portfolio Gallery
@@ -529,8 +596,34 @@ export function PublicHomePage() {
           ผลงานออกแบบและพัฒนาซอฟต์แวร์
         </h1>
         <p className="mt-3 text-base text-white/60">
-          กรองตามประเภทของระบบ หรือค้นหาเทคโนโลยีที่คุณสนใจเพื่อดูแนวทางการพัฒนาที่เหมาะกับองค์กรคุณ
+          เลือกดูคลังผลงานระบบแนะนำ หรือเปลี่ยนไปที่คลังโค้ดบน GitHub เพื่อดูโครงสร้างซอร์สโค้ดในการทำงานจริง
         </p>
+      </div>
+
+      {/* Source Selector (Tabs) */}
+      <div className="flex gap-2 mb-8 border-b border-white/10 pb-4">
+        <button
+          onClick={() => handleSourceChange('database')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition duration-200 ${
+            activeWorksSource === 'database'
+              ? 'bg-[#00d4ff]/15 text-[#86eaff] border border-[#00d4ff]/30 shadow-[0_0_15px_rgba(0,212,255,0.1)]'
+              : 'text-white/60 hover:text-white hover:bg-white/[0.03] border border-transparent'
+          }`}
+        >
+          <Cpu className="h-4 w-4" />
+          ผลงานแนะนำ (Featured Projects)
+        </button>
+        <button
+          onClick={() => handleSourceChange('github')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition duration-200 ${
+            activeWorksSource === 'github'
+              ? 'bg-[#ff6b35]/20 text-[#ffb199] border border-[#ff6b35]/30 shadow-[0_0_15px_rgba(255,107,53,0.1)]'
+              : 'text-white/60 hover:text-white hover:bg-white/[0.03] border border-transparent'
+          }`}
+        >
+          <Github className="h-4 w-4" />
+          คลังโค้ด GitHub (GitHub Repositories)
+        </button>
       </div>
 
       {/* Search & Layout */}
@@ -539,39 +632,67 @@ export function PublicHomePage() {
         {/* Filters Sidebar */}
         <aside className="space-y-6">
           
-          {/* Industry Category Filter */}
-          <div className="rounded-lg border border-white/10 bg-[#11161a]/60 p-5 backdrop-blur">
-            <h3 className="text-xs font-black uppercase tracking-wider text-white/50 mb-4 flex items-center gap-2">
-              <Filter className="h-3 w-3 text-[#ff6b35]" />
-              ประเภทธุรกิจ / อุตสาหกรรม
-            </h3>
-            <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-1.5">
-              {[
-                ['All', 'ทั้งหมด'],
-                ['Enterprise', 'ระบบองค์กร'],
-                ['SaaS', 'SaaS / Productivity'],
-                ['Commerce', 'ค้าปลีก & อีคอมเมิร์ซ'],
-                ['LINE Integration', 'ระบบ LINE OA & LIFF'],
-                ['Tourism', 'ระบบท่องเที่ยว & ทุนจอง'],
-                ['Medical', 'ระบบด้านการแพทย์'],
-              ].map(([key, label]) => {
-                const isActive = selectedIndustry === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedIndustry(key)}
-                    className={`px-3 py-1.5 text-xs text-left rounded-lg transition duration-200 ${
-                      isActive
-                        ? 'bg-[#ff6b35]/20 text-[#ffb199] border border-[#ff6b35]/40 font-bold'
-                        : 'bg-white/[0.02] text-white/60 border border-transparent hover:bg-white/[0.05] hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+          {activeWorksSource === 'database' ? (
+            /* Industry Category Filter */
+            <div className="rounded-lg border border-white/10 bg-[#11161a]/60 p-5 backdrop-blur">
+              <h3 className="text-xs font-black uppercase tracking-wider text-white/50 mb-4 flex items-center gap-2">
+                <Filter className="h-3 w-3 text-[#ff6b35]" />
+                ประเภทธุรกิจ / อุตสาหกรรม
+              </h3>
+              <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-1.5">
+                {[
+                  ['All', 'ทั้งหมด'],
+                  ['Enterprise', 'ระบบองค์กร'],
+                  ['SaaS', 'SaaS / Productivity'],
+                  ['Commerce', 'ค้าปลีก & อีคอมเมิร์ซ'],
+                  ['LINE Integration', 'ระบบ LINE OA & LIFF'],
+                  ['Tourism', 'ระบบท่องเที่ยว & ทุนจอง'],
+                  ['Medical', 'ระบบด้านการแพทย์'],
+                ].map(([key, label]) => {
+                  const isActive = selectedIndustry === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedIndustry(key)}
+                      className={`px-3 py-1.5 text-xs text-left rounded-lg transition duration-200 ${
+                        isActive
+                          ? 'bg-[#ff6b35]/20 text-[#ffb199] border border-[#ff6b35]/40 font-bold'
+                          : 'bg-white/[0.02] text-white/60 border border-transparent hover:bg-white/[0.05] hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* GitHub Profile Summary Widget */
+            <div className="rounded-lg border border-white/10 bg-[#11161a]/60 p-5 backdrop-blur flex flex-col items-center text-center">
+              <div className="relative group">
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-[#ff6b35] to-[#ffb199] rounded-full blur opacity-40 group-hover:opacity-75 transition duration-500" />
+                <img
+                  src="https://avatars.githubusercontent.com/u/76949159?v=4"
+                  alt="Fouxth GitHub"
+                  className="relative w-16 h-16 rounded-full border border-white/20"
+                />
+              </div>
+              <h4 className="mt-4 text-sm font-black text-white">@Fouxth</h4>
+              <p className="mt-1 text-[11px] text-[#ffb199] font-bold">GitHub Developer Profile</p>
+              <p className="mt-3 text-xs text-white/50 leading-relaxed">
+                คลังซอร์สโค้ดโปรเจกต์โอเพนซอร์สและการทดลองพัฒนาเทคโนโลยีต่าง ๆ ของทีม Dev4TH
+              </p>
+              <a
+                href="https://github.com/Fouxth"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 w-full py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-white/20 text-xs font-bold text-white rounded-lg transition duration-200 flex items-center justify-center gap-1.5"
+              >
+                <Github className="w-3.5 h-3.5" />
+                เยี่ยมชม GitHub Profile
+              </a>
+            </div>
+          )}
 
           {/* Tech Stack Filter */}
           <div className="rounded-lg border border-white/10 bg-[#11161a]/60 p-5 backdrop-blur">
@@ -580,32 +701,51 @@ export function PublicHomePage() {
               เทคโนโลยี / Stack
             </h3>
             <div className="flex flex-wrap gap-2 lg:flex-col lg:gap-1.5">
-              {[
-                ['All', 'ทั้งหมด'],
-                ['React', 'React.js'],
-                ['Next.js', 'Next.js'],
-                ['Node.js', 'Node.js'],
-                ['PostgreSQL', 'PostgreSQL'],
-                ['MongoDB', 'MongoDB'],
-                ['LINE LIFF', 'LINE LIFF'],
-                ['Flutter', 'Flutter (Mobile)'],
-                ['Python', 'Python AI'],
-              ].map(([key, label]) => {
-                const isActive = selectedTech === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setSelectedTech(key)}
-                    className={`px-3 py-1.5 text-xs text-left rounded-lg transition duration-200 ${
-                      isActive
-                        ? 'bg-[#00d4ff]/10 text-[#86eaff] border border-[#00d4ff]/30 font-bold'
-                        : 'bg-white/[0.02] text-white/60 border border-transparent hover:bg-white/[0.05] hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+              {activeWorksSource === 'database' ? (
+                [
+                  ['All', 'ทั้งหมด'],
+                  ['React', 'React.js'],
+                  ['Next.js', 'Next.js'],
+                  ['Node.js', 'Node.js'],
+                  ['PostgreSQL', 'PostgreSQL'],
+                  ['MongoDB', 'MongoDB'],
+                  ['LINE LIFF', 'LINE LIFF'],
+                  ['Flutter', 'Flutter (Mobile)'],
+                  ['Python', 'Python AI'],
+                ].map(([key, label]) => {
+                  const isActive = selectedTech === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedTech(key)}
+                      className={`px-3 py-1.5 text-xs text-left rounded-lg transition duration-200 ${
+                        isActive
+                          ? 'bg-[#00d4ff]/10 text-[#86eaff] border border-[#00d4ff]/30 font-bold'
+                          : 'bg-white/[0.02] text-white/60 border border-transparent hover:bg-white/[0.05] hover:text-white'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })
+              ) : (
+                getLanguagesForGithub().map((lang) => {
+                  const isActive = selectedTech === lang;
+                  return (
+                    <button
+                      key={lang}
+                      onClick={() => setSelectedTech(lang)}
+                      className={`px-3 py-1.5 text-xs text-left rounded-lg transition duration-200 ${
+                        isActive
+                          ? 'bg-[#ff6b35]/20 text-[#ffb199] border border-[#ff6b35]/30 font-bold'
+                          : 'bg-white/[0.02] text-white/60 border border-transparent hover:bg-white/[0.05] hover:text-white'
+                      }`}
+                    >
+                      {lang === 'All' ? 'ทั้งหมด' : lang}
+                    </button>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -624,72 +764,156 @@ export function PublicHomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ค้นหาชื่อผลงาน, รายละเอียด หรือ stack..."
+                placeholder={
+                  activeWorksSource === 'database'
+                    ? "ค้นหาชื่อผลงาน, รายละเอียด หรือ stack..."
+                    : "ค้นหาคลังโค้ด GitHub..."
+                }
                 className="w-full h-10 pl-10 pr-4 text-sm text-white bg-white/[0.04] border border-white/10 rounded-lg outline-none transition duration-300 focus:border-[#00d4ff] focus:bg-white/[0.07] focus:shadow-[0_0_12px_rgba(0,212,255,0.15)] placeholder:text-white/30"
               />
             </div>
             <p className="text-xs font-bold text-white/40 tracking-wider uppercase shrink-0">
-              พบ {filteredWorks.length} จาก {portfolioWorks.length} ระบบ
+              {activeWorksSource === 'database'
+                ? `พบ ${filteredWorks.length} จาก ${portfolioWorks.length} ระบบ`
+                : `พบ ${filteredGithubRepos.length} จาก ${githubRepos.length} คลังโค้ด`
+              }
             </p>
           </div>
 
           {/* Grid of Results */}
-          {filteredWorks.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {filteredWorks.map((work) => (
-                <article
-                  key={work.name}
-                  className="flex flex-col justify-between p-6 rounded-lg border border-white/10 bg-[#11161a]/60 transition duration-300 hover:border-white/20 hover:bg-[#11161a]/80 relative overflow-hidden group"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="rounded-md bg-white/[0.04] px-2 py-0.5 border border-white/10 text-[11px] font-bold text-white/70">
-                        {work.type}
-                      </span>
-                      <span className="text-[10px] font-black text-[#00d4ff] uppercase tracking-wider">
-                        {work.industry}
-                      </span>
-                    </div>
-
-                    <h3 className="mt-5 text-lg font-bold text-white group-hover:text-[#ff6b35] transition duration-300">
-                      {work.name}
-                    </h3>
-                    <p className="mt-2 text-sm text-white/60 leading-6">
-                      {work.text}
-                    </p>
-                  </div>
-
-                  <div className="mt-6 border-t border-white/10 pt-4 flex flex-col gap-4">
-                    <div className="flex flex-wrap gap-1.5">
-                      {work.tags.map(t => (
-                        <span key={t} className="px-2 py-0.5 bg-[#0b0d0f] rounded text-[10px] text-white/50 font-mono">
-                          {t}
+          {activeWorksSource === 'database' ? (
+            filteredWorks.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {filteredWorks.map((work) => (
+                  <article
+                    key={work.name}
+                    className="flex flex-col justify-between p-6 rounded-lg border border-white/10 bg-[#11161a]/60 transition duration-300 hover:border-white/20 hover:bg-[#11161a]/80 relative overflow-hidden group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="rounded-md bg-white/[0.04] px-2 py-0.5 border border-white/10 text-[11px] font-bold text-white/70">
+                          {work.type}
                         </span>
-                      ))}
+                        <span className="text-[10px] font-black text-[#00d4ff] uppercase tracking-wider">
+                          {work.industry}
+                        </span>
+                      </div>
+
+                      <h3 className="mt-5 text-lg font-bold text-white group-hover:text-[#ff6b35] transition duration-300">
+                        {work.name}
+                      </h3>
+                      <p className="mt-2 text-sm text-white/60 leading-6">
+                        {work.text}
+                      </p>
                     </div>
 
-                    <button
-                      onClick={() => selectSystemForQuote(work.name)}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff6b35] hover:text-[#ff7d4f] transition duration-200 mt-1 self-start"
-                    >
-                      ประเมินราคาตามรูปแบบระบบนี้
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </article>
-              ))}
-            </div>
+                    <div className="mt-6 border-t border-white/10 pt-4 flex flex-col gap-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {work.tags.map(t => (
+                          <span key={t} className="px-2 py-0.5 bg-[#0b0d0f] rounded text-[10px] text-white/50 font-mono">
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={() => selectSystemForQuote(work.name)}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff6b35] hover:text-[#ff7d4f] transition duration-200 mt-1 self-start"
+                      >
+                        ประเมินราคาตามรูปแบบระบบนี้
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 border border-dashed border-white/10 rounded-lg bg-white/[0.01]">
+                <Cpu className="h-8 w-8 text-white/20 mx-auto mb-3" />
+                <p className="text-sm text-white/50 font-bold">ไม่พบผลงานที่สอดคล้องกับคำค้นหาของคุณ</p>
+                <button
+                  onClick={() => { setSearchQuery(''); setSelectedIndustry('All'); setSelectedTech('All'); }}
+                  className="mt-3 text-xs font-bold text-[#ff6b35] hover:underline"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              </div>
+            )
           ) : (
-            <div className="text-center py-20 border border-dashed border-white/10 rounded-lg bg-white/[0.01]">
-              <Cpu className="h-8 w-8 text-white/20 mx-auto mb-3" />
-              <p className="text-sm text-white/50 font-bold">ไม่พบผลงานที่สอดคล้องกับคำค้นหาของคุณ</p>
-              <button
-                onClick={() => { setSearchQuery(''); setSelectedIndustry('All'); setSelectedTech('All'); }}
-                className="mt-3 text-xs font-bold text-[#ff6b35] hover:underline"
-              >
-                ล้างตัวกรองทั้งหมด
-              </button>
-            </div>
+            /* GitHub Repos Source */
+            loadingGithub ? (
+              <div className="flex flex-col items-center justify-center py-24 border border-dashed border-white/10 rounded-lg bg-white/[0.01]">
+                <Loader2 className="h-8 w-8 text-[#ff6b35] animate-spin mb-4" />
+                <p className="text-sm text-white/50">กำลังดึงข้อมูลคลังโค้ดจาก GitHub...</p>
+              </div>
+            ) : filteredGithubRepos.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {filteredGithubRepos.map((repo) => (
+                  <article
+                    key={repo.id}
+                    className="flex flex-col justify-between p-6 rounded-lg border border-white/10 bg-[#11161a]/60 transition duration-300 hover:border-white/20 hover:bg-[#11161a]/80 relative overflow-hidden group"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="rounded-md bg-[#ff6b35]/10 px-2 py-0.5 border border-[#ff6b35]/20 text-[11px] font-bold text-[#ffb199] flex items-center gap-1.5">
+                          <Github className="h-3 w-3" />
+                          Repository
+                        </span>
+                        {repo.language && (
+                          <span className="text-[10px] font-black text-[#86eaff] uppercase tracking-wider">
+                            {repo.language}
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="mt-5 text-lg font-bold text-white group-hover:text-[#ff6b35] transition duration-300">
+                        {repo.name}
+                      </h3>
+                      <p className="mt-2 text-sm text-white/60 leading-6 line-clamp-3">
+                        {repo.description || 'ไม่มีคำอธิบายในคลังเก็บโค้ดนี้'}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 border-t border-white/10 pt-4 flex flex-col gap-4">
+                      <div className="flex items-center gap-4 text-xs text-white/40">
+                        <span className="flex items-center gap-1 font-mono">
+                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                          {repo.stargazers_count}
+                        </span>
+                        <span className="flex items-center gap-1 font-mono">
+                          <GitFork className="h-3.5 w-3.5" />
+                          {repo.forks_count}
+                        </span>
+                        <span className="ml-auto text-[10px]">
+                          อัปเดต: {new Date(repo.updated_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <a
+                        href={repo.html_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#ff6b35] hover:text-[#ff7d4f] transition duration-200 mt-1 self-start"
+                      >
+                        ดูซอร์สโค้ดบน GitHub
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 border border-dashed border-white/10 rounded-lg bg-white/[0.01]">
+                <Github className="h-8 w-8 text-white/20 mx-auto mb-3" />
+                <p className="text-sm text-white/50 font-bold">ไม่พบคลังโค้ดที่สอดคล้องกับคำค้นหาของคุณ</p>
+                <button
+                  onClick={() => { setSearchQuery(''); setSelectedTech('All'); }}
+                  className="mt-3 text-xs font-bold text-[#ff6b35] hover:underline"
+                >
+                  ล้างตัวกรองทั้งหมด
+                </button>
+              </div>
+            )
           )}
 
         </div>
