@@ -116,6 +116,8 @@ chatsRouter.post('/', async (req: AuthRequest, res) => {
                 otherId, 'chat', '💬 แชทใหม่',
                 'มีคนเริ่มแชทกับคุณ', chat.id
             );
+            // Let the other member's client add + join this chat live, without a reload
+            emitToUsers([otherId], 'chat:new', chat);
 
             return res.json(chat);
         }
@@ -158,6 +160,9 @@ chatsRouter.post('/', async (req: AuthRequest, res) => {
                 project: { select: { id: true, name: true, color: true } }
             }
         });
+
+        const otherMemberIds = memberUserIds.filter(uid => uid !== createdBy);
+        emitToUsers(otherMemberIds, 'chat:new', chat);
 
         return res.json(chat);
     } catch (error) {
@@ -236,10 +241,13 @@ chatsRouter.post('/:id/messages', async (req: AuthRequest, res) => {
         // Bump chat.updatedAt so it sorts to top
         await prisma.chat.update({ where: { id: chatId }, data: { updatedAt: new Date() } });
 
-        // Broadcast to everyone in the chat room
+        // Broadcast to everyone in the chat room. All members auto-join every
+        // chat room on socket connect (see useChats.ts), so this alone reaches
+        // every online member — a second emit here would double-deliver the
+        // event and double-count unread for recipients.
         getIO().to(`chat:${chatId}`).emit('chat:message', message);
 
-        // Push in-app notification to offline members (not in room)
+        // Persisted notification (works even if the recipient is offline / hasn't joined yet)
         const chat = await prisma.chat.findUnique({
             where: { id: chatId },
             include: {
@@ -252,8 +260,6 @@ chatsRouter.post('/:id/messages', async (req: AuthRequest, res) => {
             const otherIds = chat.members
                 .filter((m: { userId: string }) => m.userId !== userId)
                 .map((m: { userId: string }) => m.userId);
-
-            emitToUsers(otherIds, 'chat:message', message);
 
             const senderName = message.user.name;
             const chatName = chat.type === 'project'

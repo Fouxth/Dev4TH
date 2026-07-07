@@ -49,135 +49,134 @@ export function KanbanBoard({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [draggedEl, setDraggedEl] = useState<HTMLElement | null>(null);
   const { t } = useLanguage();
-  const dragCountRef = useRef(0);
+
+  // Pointer-based drag state (works for both mouse and touch — HTML5 DnD has no touch support)
+  const dragRef = useRef<{
+    task: Task;
+    ghost: HTMLElement;
+    sourceEl: HTMLElement;
+    offsetX: number;
+    offsetY: number;
+    pointerId: number;
+  } | null>(null);
 
   const getTasksByStatus = (status: TaskStatus) => {
     return tasks.filter(task => task.status === status);
   };
 
-  const handleDragStart = (e: React.DragEvent, task: Task) => {
-    // Prevent drag if read-only
-    if (readOnly) {
-      e.preventDefault();
-      return;
-    }
-    
-    // Prevent drag if user not assigned to this task
-    // Check if assignees exists and is not empty, then check if current user is in it
-    const hasAssignees = task.assignees && Array.isArray(task.assignees) && task.assignees.length > 0;
-    const isAssigned = hasAssignees && currentUserId && task.assignees.includes(currentUserId);
-    
-    if (currentUserId && !isAssigned) {
-      e.preventDefault();
-      // Show a brief message
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-bounce';
-      toast.textContent = '⚠️ คุณไม่ได้รับมอบหมายงานนี้';
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => document.body.removeChild(toast), 300);
-      }, 2000);
-      return;
-    }
-    
-    setDraggedTask(task);
-    const el = e.currentTarget as HTMLElement;
-    setDraggedEl(el);
-
-    // Custom drag ghost
-    const ghost = el.cloneNode(true) as HTMLElement;
-    ghost.style.width = `${el.offsetWidth}px`;
-    ghost.style.opacity = '0.85';
-    ghost.style.transform = 'rotate(3deg) scale(1.02)';
-    ghost.style.position = 'absolute';
-    ghost.style.top = '-9999px';
-    document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, el.offsetWidth / 2, 30);
-    e.dataTransfer.effectAllowed = 'move';
-
-    // Mark original as dragging
-    requestAnimationFrame(() => {
-      el.style.opacity = '0.3';
-      el.style.transform = 'scale(0.95)';
-    });
-
-    // Clean up ghost
-    setTimeout(() => document.body.removeChild(ghost), 0);
+  const showDragToast = (message: string, variant: 'warn' | 'error' = 'warn') => {
+    const toast = document.createElement('div');
+    toast.className = cn(
+      'fixed top-20 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded-lg shadow-lg z-50',
+      variant === 'error' ? 'bg-red-500' : 'bg-orange-500 animate-bounce'
+    );
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.3s';
+      setTimeout(() => toast.remove(), 300);
+    }, variant === 'error' ? 2500 : 2000);
   };
 
-  const handleDragEnd = () => {
-    if (draggedEl) {
-      draggedEl.style.opacity = '1';
-      draggedEl.style.transform = '';
+  const isTaskAssignedToUser = (task: Task) => {
+    const hasAssignees = task.assignees && Array.isArray(task.assignees) && task.assignees.length > 0;
+    return !currentUserId || !!(hasAssignees && task.assignees.includes(currentUserId));
+  };
+
+  const cleanupDrag = () => {
+    const state = dragRef.current;
+    if (state) {
+      state.ghost.remove();
+      state.sourceEl.style.opacity = '1';
+      state.sourceEl.style.transform = '';
     }
+    dragRef.current = null;
     setDraggedTask(null);
     setDragOverColumn(null);
     setDragOverIndex(null);
-    setDraggedEl(null);
-    dragCountRef.current = 0;
   };
 
-  const handleColumnDragEnter = (e: React.DragEvent, columnId: string) => {
-    e.preventDefault();
-    dragCountRef.current++;
-    setDragOverColumn(columnId);
-  };
-
-  const handleColumnDragLeave = () => {
-    dragCountRef.current--;
-    if (dragCountRef.current <= 0) {
-      setDragOverColumn(null);
-      setDragOverIndex(null);
-      dragCountRef.current = 0;
-    }
-  };
-
-  const handleCardDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDrop = (e: React.DragEvent, columnId: TaskStatus) => {
-    e.preventDefault();
-    
-    if (!draggedTask) {
-      handleDragEnd();
+  const handleHandlePointerDown = (e: React.PointerEvent, task: Task) => {
+    if (readOnly) return;
+    if (currentUserId && !isTaskAssignedToUser(task)) {
+      showDragToast('⚠️ คุณไม่ได้รับมอบหมายงานนี้');
       return;
     }
 
-    // Check if user is assigned to the task
-    const hasAssignees = draggedTask.assignees && Array.isArray(draggedTask.assignees) && draggedTask.assignees.length > 0;
-    const isAssigned = hasAssignees && currentUserId && draggedTask.assignees.includes(currentUserId);
-    
-    if (currentUserId && !isAssigned) {
-      // Show error message
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-      toast.textContent = '❌ ไม่สามารถเปลี่ยนสถานะได้ - คุณไม่ได้รับมอบหมายงานนี้';
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s';
-        setTimeout(() => document.body.removeChild(toast), 300);
-      }, 2500);
-      handleDragEnd();
-      return;
+    const handleEl = e.currentTarget as HTMLElement;
+    const cardEl = handleEl.closest<HTMLElement>('[data-task-index]');
+    if (!cardEl) return;
+
+    e.preventDefault();
+    const rect = cardEl.getBoundingClientRect();
+
+    const ghost = cardEl.cloneNode(true) as HTMLElement;
+    ghost.style.position = 'fixed';
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.margin = '0';
+    ghost.style.pointerEvents = 'none';
+    ghost.style.opacity = '0.9';
+    ghost.style.transform = 'rotate(2deg) scale(1.02)';
+    ghost.style.zIndex = '9999';
+    ghost.style.transition = 'none';
+    document.body.appendChild(ghost);
+
+    cardEl.style.opacity = '0.3';
+    cardEl.style.transform = 'scale(0.97)';
+
+    dragRef.current = { task, ghost, sourceEl: cardEl, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top, pointerId: e.pointerId };
+    setDraggedTask(task);
+    handleEl.setPointerCapture(e.pointerId);
+  };
+
+  const resolveDropTarget = (x: number, y: number) => {
+    const target = document.elementFromPoint(x, y);
+    const columnEl = target?.closest<HTMLElement>('[data-column-id]');
+    const cardEl = target?.closest<HTMLElement>('[data-task-index]');
+    return {
+      columnId: columnEl?.dataset.columnId as TaskStatus | undefined,
+      taskIndex: cardEl ? Number(cardEl.dataset.taskIndex) : null,
+    };
+  };
+
+  const handleHandlePointerMove = (e: React.PointerEvent) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+    e.preventDefault();
+
+    state.ghost.style.left = `${e.clientX - state.offsetX}px`;
+    state.ghost.style.top = `${e.clientY - state.offsetY}px`;
+
+    const { columnId, taskIndex } = resolveDropTarget(e.clientX, e.clientY);
+    setDragOverColumn(columnId ?? null);
+    setDragOverIndex(taskIndex);
+  };
+
+  const handleHandlePointerUp = (e: React.PointerEvent) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+
+    const { columnId } = resolveDropTarget(e.clientX, e.clientY);
+    if (columnId && currentUserId && !isTaskAssignedToUser(state.task)) {
+      showDragToast('❌ ไม่สามารถเปลี่ยนสถานะได้ - คุณไม่ได้รับมอบหมายงานนี้', 'error');
+    } else if (columnId && state.task.status !== columnId) {
+      onStatusChange(state.task.id, columnId);
     }
-    
-    if (draggedTask.status !== columnId) {
-      onStatusChange(draggedTask.id, columnId);
-    }
-    handleDragEnd();
+    cleanupDrag();
+  };
+
+  const handleHandlePointerCancel = (e: React.PointerEvent) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== e.pointerId) return;
+    cleanupDrag();
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+    <div className="kanban-scroll flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
       {columns.map((column, _columnIndex) => {
         const columnTasks = getTasksByStatus(column.id);
         const isDragOver = dragOverColumn === column.id;
@@ -186,6 +185,7 @@ export function KanbanBoard({
         return (
           <div
             key={column.id}
+            data-column-id={column.id}
             className={cn(
               "flex-shrink-0 w-80 flex flex-col rounded-xl transition-all duration-300",
               "border border-white/5",
@@ -198,10 +198,6 @@ export function KanbanBoard({
               transform: 'translateY(0)',
               transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)'
             }}
-            onDragEnter={(e) => handleColumnDragEnter(e, column.id)}
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-            onDragLeave={handleColumnDragLeave}
-            onDrop={(e) => handleDrop(e, column.id)}
           >
             {/* Column Header */}
             <div
@@ -222,13 +218,13 @@ export function KanbanBoard({
               </div>
 
               <div className="flex items-center gap-1">
-                <button className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                <button className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-white/10 active:bg-white/10 rounded-lg transition-colors">
                   <MoreHorizontal className="w-4 h-4 text-gray-400" />
                 </button>
                 {!readOnly && (
                   <button
                     onClick={() => onCreateTask(column.id)}
-                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                    className="p-1.5 min-w-[36px] min-h-[36px] flex items-center justify-center hover:bg-white/10 active:bg-white/10 rounded-lg transition-colors"
                   >
                     <Plus className="w-4 h-4 text-gray-400" />
                   </button>
@@ -243,8 +239,7 @@ export function KanbanBoard({
                 const showDropBefore = isDragOver && dragOverIndex === taskIndex && !isBeingDragged;
                 
                 // Check if user is assigned
-                const hasAssignees = task.assignees && Array.isArray(task.assignees) && task.assignees.length > 0;
-                const isUserAssigned = !currentUserId || (hasAssignees && task.assignees.includes(currentUserId));
+                const isUserAssigned = isTaskAssignedToUser(task);
                 const canDrag = !readOnly && isUserAssigned;
 
                 return (
@@ -257,10 +252,7 @@ export function KanbanBoard({
                       </div>
                     )}
                     <div
-                      draggable={canDrag}
-                      onDragStart={(e) => handleDragStart(e, task)}
-                      onDragEnd={handleDragEnd}
-                      onDragOver={(e) => handleCardDragOver(e, taskIndex)}
+                      data-task-index={taskIndex}
                       title={
                         readOnly 
                           ? 'โหมดดูอย่างเชียว' 
@@ -300,6 +292,10 @@ export function KanbanBoard({
                         }
                         showDragHandle={canDrag}
                         currentUserId={currentUserId}
+                        onHandlePointerDown={(e) => handleHandlePointerDown(e, task)}
+                        onHandlePointerMove={handleHandlePointerMove}
+                        onHandlePointerUp={handleHandlePointerUp}
+                        onHandlePointerCancel={handleHandlePointerCancel}
                       />
                     </div>
                   </div>

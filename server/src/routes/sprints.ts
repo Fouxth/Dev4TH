@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { emitToAll } from '../lib/socket.js';
 
 export const sprintsRouter = Router();
 
@@ -85,6 +86,7 @@ sprintsRouter.post('/', async (req, res) => {
                 status: status || 'planning'
             }
         });
+        emitToAll('sprint:created', { ...sprint, tasks: [], taskDetails: [] });
         res.status(201).json(sprint);
     } catch (error) {
         console.error('Error creating sprint:', error);
@@ -106,7 +108,24 @@ sprintsRouter.patch('/:id', async (req, res) => {
 
         const sprint = await prisma.sprint.update({
             where: { id: req.params.id },
-            data
+            data,
+            include: {
+                tasks: {
+                    select: { id: true, status: true, title: true, priority: true, dueDate: true, assignees: { select: { userId: true } } }
+                }
+            }
+        });
+        emitToAll('sprint:updated', {
+            ...sprint,
+            tasks: sprint.tasks.map(t => t.id),
+            taskDetails: sprint.tasks.map(t => ({
+                id: t.id,
+                title: t.title,
+                status: t.status,
+                priority: t.priority,
+                dueDate: t.dueDate,
+                assignees: t.assignees.map(a => a.userId)
+            }))
         });
         res.json(sprint);
     } catch (error) {
@@ -124,6 +143,7 @@ sprintsRouter.delete('/:id', async (req, res) => {
             data: { sprintId: null }
         });
         await prisma.sprint.delete({ where: { id: req.params.id } });
+        emitToAll('sprint:deleted', { id: req.params.id });
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting sprint:', error);

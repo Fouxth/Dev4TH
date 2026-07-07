@@ -26,7 +26,8 @@ import {
   Menu,
   X,
   Layers,
-  Cpu
+  Cpu,
+  LogIn
 } from 'lucide-react';
 
 const capabilities = [
@@ -1092,6 +1093,20 @@ export function PublicHomePage() {
         {currentTab === 'works' && renderWorks()}
         {currentTab === 'contact' && renderContact()}
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 bg-[#0b0d0f] py-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-4 text-center">
+          <p className="text-xs text-white/40">เป็นทีมงานอยู่แล้ว?</p>
+          <a
+            href="/login"
+            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.02] px-5 py-2.5 text-sm font-bold text-white/70 transition-all duration-300 hover:border-[#ff6b35]/50 hover:bg-[#ff6b35]/10 hover:text-white"
+          >
+            <LogIn className="h-4 w-4" />
+            หน้าสำหรับพนักงาน
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -145,6 +145,48 @@ export const useStore = () => {
         prev.map(p => p.id === updatedProject.id ? { ...p, ...updatedProject } : p)
       );
     });
+    socket.on('project:created', (project: Project) => {
+      setProjects(prev => prev.some(p => p.id === project.id) ? prev : [project, ...prev]);
+    });
+    socket.on('project:deleted', ({ id }: { id: string }) => {
+      setProjects(prev => prev.filter(p => p.id !== id));
+    });
+
+    // Tasks — merge instead of refetching so other users see changes without a reload
+    socket.on('task:created', (task: Task) => {
+      setTasks(prev => prev.some(t => t.id === task.id) ? prev : [task, ...prev]);
+    });
+    socket.on('task:updated', (task: Task) => {
+      setTasks(prev => prev.map(t => t.id === task.id ? task : t));
+    });
+    socket.on('task:status_changed', ({ id, status, completedAt }: { id: string; status: TaskStatus; completedAt: string | null }) => {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status, completedAt: completedAt ? new Date(completedAt) : undefined } : t));
+    });
+    socket.on('task:deleted', ({ id }: { id: string }) => {
+      setTasks(prev => prev.filter(t => t.id !== id));
+    });
+
+    // Sprints
+    socket.on('sprint:created', (sprint: Sprint) => {
+      setSprints(prev => prev.some(s => s.id === sprint.id) ? prev : [sprint, ...prev]);
+    });
+    socket.on('sprint:updated', (sprint: Sprint) => {
+      setSprints(prev => prev.map(s => s.id === sprint.id ? sprint : s));
+    });
+    socket.on('sprint:deleted', ({ id }: { id: string }) => {
+      setSprints(prev => prev.filter(s => s.id !== id));
+    });
+
+    // Calendar events
+    socket.on('event:created', (event: CalendarEvent) => {
+      setCalendarEvents(prev => prev.some(e => e.id === event.id) ? prev : [event, ...prev]);
+    });
+    socket.on('event:updated', (event: CalendarEvent) => {
+      setCalendarEvents(prev => prev.map(e => e.id === event.id ? event : e));
+    });
+    socket.on('event:deleted', ({ id }: { id: string }) => {
+      setCalendarEvents(prev => prev.filter(e => e.id !== id));
+    });
 
     return () => { socket.disconnect(); };
   }, []);

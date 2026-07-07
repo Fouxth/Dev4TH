@@ -157,8 +157,14 @@ function App() {
     token,
     prefs: notifPrefs,
     onNotification: (notification) => {
-      // Skip alert popup for chat — handled by ChatPanel unread badge
-      if ((notification.type as string) === 'chat') return;
+      // Chat: skip the toast only if that exact chat is already open and being read —
+      // otherwise show it (with sound, handled by useNotifications) like any other notification
+      if ((notification.type as string) === 'chat') {
+        const isViewingThisChat = isChatOpen && chatHook.activeChatId === notification.link;
+        if (isViewingThisChat) return;
+        alerts.info(notification.title, notification.message, 6000);
+        return;
+      }
 
       const alertTypeMap: Record<string, 'info' | 'success' | 'warning' | 'error'> = {
         'task_assigned': 'info',
@@ -695,7 +701,13 @@ function App() {
       />
 
       {/* Mobile Nav */}
-      <MobileNav activeView={activeView} onViewChange={setActiveView} userRole={authUser?.role} />
+      <MobileNav
+        activeView={activeView}
+        onViewChange={setActiveView}
+        userRole={authUser?.role}
+        totalUnread={chatHook.totalUnread}
+        onChatOpen={() => setIsChatOpen(true)}
+      />
 
       {/* Main Content */}
       <main className={cn(

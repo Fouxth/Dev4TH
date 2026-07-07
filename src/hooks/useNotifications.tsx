@@ -100,6 +100,12 @@ export function useNotifications({ token, prefs, onNotification }: UseNotificati
     const [pushLoading, setPushLoading] = useState(false);
     const socketRef = useRef<Socket | null>(null);
 
+    // Keep the latest prefs/callback available to the socket handler without
+    // having to reconnect the socket every render (the effect below only
+    // depends on `token`).
+    const latestRef = useRef({ prefs, onNotification });
+    useEffect(() => { latestRef.current = { prefs, onNotification }; });
+
     // Fetch notifications from REST API
     const fetchNotifications = useCallback(async () => {
         if (!token) return;
@@ -136,17 +142,15 @@ export function useNotifications({ token, prefs, onNotification }: UseNotificati
             setNotifications(prev => [notif, ...prev]);
             setUnreadCount(prev => prev + 1);
 
-            // Skip chat notifications — handled by ChatPanel unread badge
-            if ((notif.type as string) === 'chat') return;
-
-            // Check user prefs
+            // Check user prefs (read fresh via ref — this effect doesn't re-run on prefs/callback changes)
+            const { prefs: currentPrefs, onNotification: currentOnNotification } = latestRef.current;
             const prefKey = TYPE_TO_PREF[notif.type];
-            const allowed = !prefKey || !prefs || prefs[prefKey] !== false;
+            const allowed = !prefKey || !currentPrefs || currentPrefs[prefKey] !== false;
 
             if (allowed) {
                 playNotificationSound();
-                if (onNotification) {
-                    onNotification(notif);
+                if (currentOnNotification) {
+                    currentOnNotification(notif);
                 }
             }
         });

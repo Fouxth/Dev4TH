@@ -189,7 +189,7 @@ export function TeamCalendar({ events, tasks, users, projects, currentUserId, on
         </div>
 
         {/* Calendar Days */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="calendar-day-grid grid grid-cols-7 gap-1">
           {days.map((date) => {
             const dayEvents = getEventsForDate(date);
             const dayTasks = getTasksForDate(date);

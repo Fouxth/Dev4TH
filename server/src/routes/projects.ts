@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { emitToAll } from '../lib/socket.js';
 
 export const projectsRouter = Router();
 
@@ -73,6 +74,7 @@ projectsRouter.post('/', async (req, res) => {
                 endDate: endDate ? new Date(endDate) : undefined,
             }
         });
+        emitToAll('project:created', { ...project, taskCount: { total: 0, completed: 0, inProgress: 0, todo: 0, cancelled: 0 } });
         res.status(201).json(project);
     } catch (error) {
         console.error('Error creating project:', error);
@@ -87,6 +89,7 @@ projectsRouter.patch('/:id', async (req, res) => {
             where: { id: req.params.id },
             data: req.body
         });
+        emitToAll('project:updated', project);
         res.json(project);
     } catch (error) {
         console.error('Error updating project:', error);
@@ -100,6 +103,7 @@ projectsRouter.delete('/:id', async (req, res) => {
         await prisma.project.delete({
             where: { id: req.params.id }
         });
+        emitToAll('project:deleted', { id: req.params.id });
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting project:', error);

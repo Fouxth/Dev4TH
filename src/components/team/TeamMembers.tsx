@@ -303,7 +303,7 @@ export function TeamMembers({ users, tasks, teams, onAddTeamMember, onRemoveTeam
 
               {/* Invite new user tab */}
               <TabsContent value="invite" className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1.5">{t.teamPage.name}</label>
                     <input
@@ -336,7 +336,7 @@ export function TeamMembers({ users, tasks, teams, onAddTeamMember, onRemoveTeam
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1.5">{t.teamPage.role}</label>
                     <Select value={inviteRole} onValueChange={setInviteRole}>
@@ -977,7 +977,7 @@ export function TeamMembers({ users, tasks, teams, onAddTeamMember, onRemoveTeam
               </div>
 
               {/* Summary Stats */}
-              <div className="grid grid-cols-4 gap-3 px-6 py-4 border-b border-white/10">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 py-4 border-b border-white/10">
                 <div className="text-center p-3 rounded-xl bg-white/5">
                   <p className="text-xl font-bold text-white">{userTasks.length}</p>
                   <p className="text-xs text-gray-400 mt-1">{t.teamPage.totalTasks}</p>

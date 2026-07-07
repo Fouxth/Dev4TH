@@ -282,6 +282,18 @@
     }
   }
 
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @keyframes glow-pulse {
 
     0%,
@@ -305,6 +317,10 @@
 
   .animate-scale-in {
     animation: scale-in 0.4s var(--ease-spring) forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.35s var(--ease-expo-out) forwards;
   }
 
   .animate-glow-pulse {
@@ -350,12 +366,12 @@
 
 /* Mobile kanban: horizontal scroll */
 @media (max-width: 1023px) {
-  .flex.gap-4.overflow-x-auto {
+  .kanban-scroll {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
 
-  .flex.gap-4.overflow-x-auto > div {
+  .kanban-scroll > div {
     scroll-snap-align: start;
     min-width: 280px;
   }
@@ -364,16 +380,11 @@
 /* Small screen adjustments */
 @media (max-width: 640px) {
   /* Smaller calendar cells on mobile */
-  .grid-cols-7 > div,
-  .grid-cols-7 > button {
+  .calendar-day-grid > div,
+  .calendar-day-grid > button {
     min-height: 60px !important;
     padding: 4px !important;
     font-size: 0.75rem;
-  }
-
-  /* Stack stats cards */
-  .grid-cols-2 {
-    grid-template-columns: 1fr;
   }
 }
 

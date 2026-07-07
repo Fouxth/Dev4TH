@@ -18,7 +18,8 @@ import {
   Moon,
   Zap,
   MessageSquare,
-  Briefcase
+  Briefcase,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/i18n/LanguageContext';
@@ -38,7 +39,7 @@ interface SidebarProps {
   onCollapsedChange?: (v: boolean) => void;
 }
 
-export function Sidebar({ currentUser, activeView, onViewChange, onLogout, isMobile, isOpen, onToggle: _onToggle, totalUnread = 0, onChatOpen, collapsed: collapsedProp, onCollapsedChange }: SidebarProps) {
+export function Sidebar({ currentUser, activeView, onViewChange, onLogout, isMobile, isOpen, onToggle, totalUnread = 0, onChatOpen, collapsed: collapsedProp, onCollapsedChange }: SidebarProps) {
   const [collapsedInternal, setCollapsedInternal] = useState(false);
   const collapsed = collapsedProp !== undefined ? collapsedProp : collapsedInternal;
   const setCollapsed = (v: boolean) => { setCollapsedInternal(v); onCollapsedChange?.(v); };
@@ -75,7 +76,7 @@ export function Sidebar({ currentUser, activeView, onViewChange, onLogout, isMob
       style={{ transitionTimingFunction: 'var(--ease-spring)' }}
     >
       {/* Logo */}
-      <div className="h-16 flex items-center px-4 border-b border-white/5">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--orange)] to-[var(--neon-cyan)] flex items-center justify-center flex-shrink-0 animate-glow-pulse">
             <Code2 className="w-5 h-5 text-white" />
@@ -86,78 +87,93 @@ export function Sidebar({ currentUser, activeView, onViewChange, onLogout, isMob
             </span>
           )}
         </div>
+        {isMobile && (
+          <button
+            onClick={onToggle}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto custom-scrollbar">
-        {navItems.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
+      {/* Navigation — primary nav lives in the mobile bottom bar; the drawer only
+          carries account/settings actions on mobile to avoid duplicating it */}
+      {!isMobile && (
+        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto custom-scrollbar">
+          {navItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = activeView === item.id;
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => onViewChange(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-250 group relative overflow-hidden",
-                isActive
-                  ? "bg-[var(--orange)]/20 text-[var(--orange)]"
-                  : "text-gray-400 hover:text-white hover:bg-white/5"
-              )}
-              style={{
-                transitionTimingFunction: 'var(--ease-expo-out)',
-                animationDelay: `${index * 60}ms`
-              }}
-            >
-              {/* Active indicator */}
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--orange)] rounded-r-full glow-orange" />
-              )}
+            return (
+              <button
+                key={item.id}
+                onClick={() => onViewChange(item.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-250 group relative overflow-hidden",
+                  isActive
+                    ? "bg-[var(--orange)]/20 text-[var(--orange)]"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                )}
+                style={{
+                  transitionTimingFunction: 'var(--ease-expo-out)',
+                  animationDelay: `${index * 60}ms`
+                }}
+              >
+                {/* Active indicator */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-[var(--orange)] rounded-r-full glow-orange" />
+                )}
 
-              <Icon className={cn(
-                "w-5 h-5 flex-shrink-0 transition-transform duration-250",
-                !collapsed && "group-hover:scale-110 group-hover:rotate-6"
-              )} />
+                <Icon className={cn(
+                  "w-5 h-5 flex-shrink-0 transition-transform duration-250",
+                  !collapsed && "group-hover:scale-110 group-hover:rotate-6"
+                )} />
 
-              {!collapsed && (
-                <span className="text-sm font-medium whitespace-nowrap animate-slide-in">
-                  {item.label}
+                {!collapsed && (
+                  <span className="text-sm font-medium whitespace-nowrap animate-slide-in">
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      {/* Chat Button — desktop only; mobile reaches chat via the bottom nav's "More" sheet */}
+      {!isMobile && (
+        <div className="px-2 pb-1">
+          <button
+            onClick={onChatOpen}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-250 group relative",
+              "text-gray-400 hover:text-white hover:bg-white/5"
+            )}
+          >
+            <div className="relative flex-shrink-0">
+              <MessageSquare className="w-5 h-5 transition-transform duration-250 group-hover:scale-110 group-hover:rotate-6" />
+              {totalUnread > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-[var(--orange)] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {totalUnread > 9 ? '9+' : totalUnread}
                 </span>
               )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Chat Button */}
-      <div className="px-2 pb-1">
-        <button
-          onClick={onChatOpen}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-250 group relative",
-            "text-gray-400 hover:text-white hover:bg-white/5"
-          )}
-        >
-          <div className="relative flex-shrink-0">
-            <MessageSquare className="w-5 h-5 transition-transform duration-250 group-hover:scale-110 group-hover:rotate-6" />
-            {totalUnread > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[var(--orange)] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                {totalUnread > 9 ? '9+' : totalUnread}
+            </div>
+            {!collapsed && (
+              <span className="text-sm font-medium whitespace-nowrap animate-slide-in flex-1 text-left">
+                แชท
               </span>
             )}
-          </div>
-          {!collapsed && (
-            <span className="text-sm font-medium whitespace-nowrap animate-slide-in flex-1 text-left">
-              แชท
-            </span>
-          )}
-          {!collapsed && totalUnread > 0 && (
-            <span className="bg-[var(--orange)] text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
-              {totalUnread > 99 ? '99+' : totalUnread}
-            </span>
-          )}
-        </button>
-      </div>
+            {!collapsed && totalUnread > 0 && (
+              <span className="bg-[var(--orange)] text-white text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                {totalUnread > 99 ? '99+' : totalUnread}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {isMobile && <div className="flex-1" />}
 
       {/* Bottom Quick Actions */}
       <div className="px-2 pb-2 flex items-center gap-1">

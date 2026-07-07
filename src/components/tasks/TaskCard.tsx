@@ -23,9 +23,13 @@ interface TaskCardProps {
   onStopTimeTracking?: (taskId: string, entryId: string, description?: string) => void;
   showDragHandle?: boolean;
   currentUserId?: string;
+  onHandlePointerDown?: (e: React.PointerEvent) => void;
+  onHandlePointerMove?: (e: React.PointerEvent) => void;
+  onHandlePointerUp?: (e: React.PointerEvent) => void;
+  onHandlePointerCancel?: (e: React.PointerEvent) => void;
 }
 
-export function TaskCard({ task, users, onClick, onDelete, onStartTimeTracking, onStopTimeTracking, showDragHandle, currentUserId }: TaskCardProps) {
+export function TaskCard({ task, users, onClick, onDelete, onStartTimeTracking, onStopTimeTracking, showDragHandle, currentUserId, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp, onHandlePointerCancel }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { t } = useLanguage();
@@ -99,9 +103,16 @@ export function TaskCard({ task, users, onClick, onDelete, onStartTimeTracking, 
         transform: isHovered ? 'translateY(-8px) translateZ(30px)' : 'translateZ(0)'
       }}
     >
-      {/* Drag handle */}
+      {/* Drag handle — always visible at reduced opacity on touch/mobile viewports since hover doesn't exist there */}
       {showDragHandle && isAssignedToMe && (
-        <div className="absolute left-0 top-0 bottom-0 w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+        <div
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerUp}
+          onPointerCancel={onHandlePointerCancel}
+          style={{ touchAction: 'none' }}
+          className="absolute left-0 top-0 bottom-0 w-8 flex items-center justify-center opacity-0 group-hover:opacity-100 max-lg:opacity-60 transition-opacity cursor-grab active:cursor-grabbing"
+        >
           <GripVertical className="w-4 h-4 text-gray-500" />
         </div>
       )}
@@ -137,7 +148,7 @@ export function TaskCard({ task, users, onClick, onDelete, onStartTimeTracking, 
         }}
       />
 
-      <div className="pl-3">
+      <div className={cn("pl-3", showDragHandle && isAssignedToMe && "max-lg:pl-9")}>
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2 flex-wrap">

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { createAndSendNotification, createAndSendNotifications, emitToUser, emitToUsers } from '../lib/socket.js';
+import { createAndSendNotification, createAndSendNotifications, emitToUser, emitToUsers, emitToAll } from '../lib/socket.js';
 import { sendEmail, taskAssignedEmail } from '../lib/email.js';
 import { authenticate, requireRole, type AuthRequest } from '../middleware/auth.js';
 
@@ -192,7 +192,7 @@ tasksRouter.post('/', async (req, res) => {
             }
         }
 
-        res.status(201).json({
+        const responseTask = {
             ...task,
             assignees: task.assignees.map(a => a.userId),
             tags: task.tags.map(t => t.tag),
@@ -204,7 +204,10 @@ tasksRouter.post('/', async (req, res) => {
             dependencies: task.dependencies,
             dependedOnBy: task.dependedOnBy,
             recurring: task.recurring as any
-        });
+        };
+
+        emitToAll('task:created', responseTask);
+        res.status(201).json(responseTask);
     } catch (error) {
         console.error('Error creating task:', error);
         res.status(500).json({ error: 'Failed to create task' });
@@ -436,7 +439,7 @@ tasksRouter.patch('/:id', async (req, res) => {
             }
         });
 
-        res.json(fullTask ? {
+        const responseTask = fullTask ? {
             ...fullTask,
             assignees: fullTask.assignees.map(a => a.userId),
             tags: fullTask.tags.map(t => t.tag),
@@ -448,7 +451,10 @@ tasksRouter.patch('/:id', async (req, res) => {
             dependencies: fullTask.dependencies,
             dependedOnBy: fullTask.dependedOnBy,
             recurring: fullTask.recurring as any
-        } : task);
+        } : task;
+
+        emitToAll('task:updated', responseTask);
+        res.json(responseTask);
     } catch (error) {
         console.error('Error updating task:', error);
         res.status(500).json({ error: 'Failed to update task' });
@@ -646,6 +652,7 @@ tasksRouter.patch('/:id/status', async (req, res) => {
             }
         }
 
+        emitToAll('task:status_changed', { id: task.id, status: task.status, completedAt: task.completedAt });
         res.json(task); // end if (task.projectId)
     } catch (error) {
         console.error('Error updating task status:', error);
@@ -689,6 +696,7 @@ tasksRouter.delete('/:id', async (req, res) => {
             where: { id: taskId }
         });
 
+        emitToAll('task:deleted', { id: taskId });
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting task:', error);

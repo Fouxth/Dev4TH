@@ -54,6 +54,13 @@ export function emitToUsers(userIds: string[], event: string, data: unknown) {
     }
 }
 
+/** Broadcast to every connected client — used for entities visible to all authenticated users (tasks, projects, sprints, calendar events) */
+export function emitToAll(event: string, data: unknown) {
+    if (io) {
+        io.emit(event, data);
+    }
+}
+
 /** Create and send notification to user */
 export async function createAndSendNotification(
     userId: string,

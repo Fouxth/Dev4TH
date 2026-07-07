@@ -6,6 +6,7 @@ server/node_modules/
 dist/
 server/dist/
 build/
+*.tsbuildinfo
 
 # Environment files
 .env

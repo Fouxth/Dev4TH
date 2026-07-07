@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { emitToAll } from '../lib/socket.js';
 
 export const eventsRouter = Router();
 
@@ -68,6 +69,7 @@ eventsRouter.post('/', async (req, res) => {
         
         await Promise.all(notificationPromises);
 
+        emitToAll('event:created', event);
         res.status(201).json(event);
     } catch (error) {
         console.error('Error creating event:', error);
@@ -119,6 +121,7 @@ eventsRouter.patch('/:id', async (req, res) => {
             }
         }
 
+        emitToAll('event:updated', event);
         res.json(event);
     } catch (error) {
         console.error('Error updating event:', error);
@@ -132,6 +135,7 @@ eventsRouter.delete('/:id', async (req, res) => {
         await prisma.calendarEvent.delete({
             where: { id: req.params.id }
         });
+        emitToAll('event:deleted', { id: req.params.id });
         res.json({ success: true });
     } catch (error) {
         console.error('Error deleting event:', error);

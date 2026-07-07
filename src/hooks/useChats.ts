@@ -236,6 +236,16 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
             if (socketRef.current) fetchChats();
         });
 
+        // A new chat was created with this user as a member — add it and join its room
+        // immediately so subsequent messages arrive live without a page reload.
+        socket.on('chat:new', (chat: Chat) => {
+            setChats(prev => {
+                if (prev.some(c => c.id === chat.id)) return prev;
+                return [chat, ...prev];
+            });
+            socket.emit('chat:join', chat.id);
+        });
+
         socket.on('chat:message', (msg: ChatMessage) => {
             setMessages(prev => ({
                 ...prev,
