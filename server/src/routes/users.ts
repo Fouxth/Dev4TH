@@ -40,10 +40,13 @@ usersRouter.get('/:id', async (req, res) => {
 // POST /api/users - Create user (admin only)
 usersRouter.post('/', authenticate, requireRole('admin'), async (req, res) => {
     try {
-        const { password, ...rest } = req.body;
-        const hashedPassword = password ? await bcrypt.hash(password, 10) : await bcrypt.hash('password123', 10);
+        const { password, name, email, role, department, avatar } = req.body;
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: 'กรุณากำหนดรหัสผ่านอย่างน้อย 6 ตัวอักษร' });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
         const user = await prisma.user.create({
-            data: { ...rest, password: hashedPassword }
+            data: { name, email, role, department, avatar, password: hashedPassword }
         });
         const { password: _pw, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
@@ -61,14 +64,19 @@ usersRouter.patch('/:id', authenticate, async (req: AuthRequest, res) => {
             return res.status(403).json({ error: 'คุณไม่มีสิทธิ์แก้ไขข้อมูลผู้ใช้คนอื่น' });
         }
 
-        // Non-admin and non-manager cannot change role
-        if (req.userRole !== 'admin' && req.userRole !== 'manager' && req.body.role) {
-            delete req.body.role;
+        const isAdminOrManager = req.userRole === 'admin' || req.userRole === 'manager';
+
+        // Whitelist editable fields; password must go through /api/profile/password
+        const { name, avatar, department, currentTask, status, role } = req.body;
+        const data: Record<string, unknown> = { name, avatar, department, currentTask, status };
+        if (isAdminOrManager && role) {
+            data.role = role;
         }
+        Object.keys(data).forEach((key) => data[key] === undefined && delete data[key]);
 
         const user = await prisma.user.update({
             where: { id: req.params.id as string },
-            data: req.body
+            data
         });
         const { password: _pw, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);

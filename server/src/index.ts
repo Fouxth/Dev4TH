@@ -137,11 +137,16 @@ app.use(cors({
 app.use(express.json());
 app.use('/api', apiLimiter);
 
-// Static file serving for uploads
+// Static file serving for uploads — force download so stored files (e.g. .html/.svg) can't execute in-browser
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads'), {
+    setHeaders: (res) => {
+        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+    }
+}));
 
 // Routes — auth is public, everything else is protected
 app.use('/api/auth/login', authLimiter);

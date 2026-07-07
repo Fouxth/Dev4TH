@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcrypt';
 import { prisma } from '../lib/prisma.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
+import { isValidEmail } from '../lib/validation.js';
 
 export const profileRouter = Router();
 profileRouter.use(authenticate);
@@ -36,7 +37,22 @@ profileRouter.patch('/', async (req: AuthRequest, res) => {
         const { name, email, avatar, department, status } = req.body;
         const data: Record<string, string> = {};
         if (name?.trim()) data.name = name.trim();
-        if (email?.trim()) data.email = email.trim();
+        if (email?.trim()) {
+            const normalizedEmail = email.trim();
+            if (!isValidEmail(normalizedEmail)) {
+                return res.status(400).json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' });
+            }
+            const existing = await prisma.user.findFirst({
+                where: {
+                    id: { not: req.userId! },
+                    email: { equals: normalizedEmail, mode: 'insensitive' }
+                }
+            });
+            if (existing) {
+                return res.status(409).json({ error: 'อีเมลนี้ถูกใช้แล้ว' });
+            }
+            data.email = normalizedEmail;
+        }
         if (avatar?.trim()) data.avatar = avatar.trim();
         if (department !== undefined) data.department = department;
         if (status?.trim()) data.status = status.trim();

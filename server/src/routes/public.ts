@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { isValidEmail } from '../lib/validation.js';
 
 export const publicRouter = Router();
 
@@ -24,10 +25,6 @@ const allowedBudgetRanges = new Set([
 
 function cleanString(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
-}
-
-function isValidEmail(value: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
 // POST /api/public/quotation-requests

@@ -42,8 +42,28 @@ attachmentsRouter.post('/tasks/:taskId/attachments', authenticate, async (req: A
             return;
         }
 
+        // Reject oversized requests before buffering the whole body in memory
+        const MAX_REQUEST_SIZE = 25 * 1024 * 1024 + 1024 * 1024; // file limit + headroom for multipart overhead
+        const contentLength = Number(req.headers['content-length'] || 0);
+        if (contentLength > MAX_REQUEST_SIZE) {
+            res.status(413).json({ error: 'Upload exceeds size limit' });
+            return;
+        }
+
         const chunks: Buffer[] = [];
-        req.on('data', (chunk: Buffer) => chunks.push(chunk));
+        let received = 0;
+        let rejected = false;
+        req.on('data', (chunk: Buffer) => {
+            if (rejected) return;
+            received += chunk.length;
+            if (received > MAX_REQUEST_SIZE) {
+                rejected = true;
+                res.status(413).json({ error: 'Upload exceeds size limit' });
+                req.destroy();
+                return;
+            }
+            chunks.push(chunk);
+        });
         req.on('end', async () => {
             try {
                 const body = Buffer.concat(chunks);
@@ -131,6 +151,11 @@ attachmentsRouter.delete('/attachments/:id', authenticate, async (req: AuthReque
 
         if (!attachment) {
             res.status(404).json({ error: 'Attachment not found' });
+            return;
+        }
+
+        if (attachment.uploadedBy !== req.userId && req.userRole !== 'admin' && req.userRole !== 'manager') {
+            res.status(403).json({ error: 'คุณไม่มีสิทธิ์ลบไฟล์นี้' });
             return;
         }
 

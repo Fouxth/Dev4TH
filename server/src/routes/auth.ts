@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../lib/config.js';
+import { isValidEmail } from '../lib/validation.js';
 
 export const authRouter = Router();
 
@@ -12,6 +13,9 @@ authRouter.post('/login', async (req, res) => {
         const { email, password } = req.body;
         if (!email || !password) {
             return res.status(400).json({ error: 'กรุณากรอก email และ password' });
+        }
+        if (!isValidEmail(String(email).trim())) {
+            return res.status(400).json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' });
         }
 
         const loginEmail = String(email).trim();
@@ -70,6 +74,9 @@ authRouter.post('/register', async (req, res) => {
         const { name, email, password, role, department } = req.body;
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบ' });
+        }
+        if (!isValidEmail(String(email).trim())) {
+            return res.status(400).json({ error: 'รูปแบบอีเมลไม่ถูกต้อง' });
         }
         if (password.length < 6) {
             return res.status(400).json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
