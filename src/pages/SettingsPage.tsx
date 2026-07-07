@@ -33,9 +33,28 @@ interface SettingsPageProps {
     onUserUpdate: (data: Partial<UserType>) => Promise<void>;
     notifPrefs: NotificationPrefs;
     onNotifPrefsChange: (prefs: NotificationPrefs) => void;
+    pushSupported: boolean;
+    pushPermission: NotificationPermission;
+    pushSubscribed: boolean;
+    pushLoading: boolean;
+    onEnablePush: () => Promise<boolean>;
+    onDisablePush: () => Promise<boolean>;
 }
 
-export function SettingsPage({ currentUser, lang, onLangChange: _onLangChange, onUserUpdate, notifPrefs, onNotifPrefsChange }: SettingsPageProps) {
+export function SettingsPage({
+    currentUser,
+    lang,
+    onLangChange: _onLangChange,
+    onUserUpdate,
+    notifPrefs,
+    onNotifPrefsChange,
+    pushSupported,
+    pushPermission,
+    pushSubscribed,
+    pushLoading,
+    onEnablePush,
+    onDisablePush
+}: SettingsPageProps) {
     const { logout } = useAuth();
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState('profile');
@@ -234,6 +253,7 @@ export function SettingsPage({ currentUser, lang, onLangChange: _onLangChange, o
                             { key: 'taskDue'      as keyof NotificationPrefs, label: t.settings.notificationSettings.taskDue,      desc: t.settings.notificationSettings.taskDueDesc },
                             { key: 'mention'      as keyof NotificationPrefs, label: t.settings.notificationSettings.mention,      desc: t.settings.notificationSettings.mentionDesc },
                             { key: 'projectUpdate'as keyof NotificationPrefs, label: t.settings.notificationSettings.projectUpdate,desc: t.settings.notificationSettings.projectUpdateDesc },
+                            { key: 'chatMessages' as keyof NotificationPrefs, label: lang === 'th' ? 'ข้อความแชทและโปรเจกต์' : 'Chat and project messages', desc: lang === 'th' ? 'แจ้งเตือนเมื่อมีข้อความใหม่ในแชทส่วนตัวหรือแชทโปรเจกต์' : 'Notify when a direct or project chat message arrives' },
                             { key: 'weeklyReport' as keyof NotificationPrefs, label: t.settings.notificationSettings.weeklyReport, desc: t.settings.notificationSettings.weeklyReportDesc },
                         ] as const).map(n => (
                             <div key={n.key} className="flex items-center justify-between p-4 bg-white/3 border border-white/5 rounded-xl">
@@ -256,6 +276,38 @@ export function SettingsPage({ currentUser, lang, onLangChange: _onLangChange, o
                                 </button>
                             </div>
                         ))}
+                        <div className="p-4 bg-white/3 border border-white/5 rounded-xl">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <div className="text-sm font-medium text-white">
+                                        {lang === 'th' ? 'แจ้งเตือนบนอุปกรณ์นี้' : 'Device push notifications'}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                        {pushSupported
+                                            ? pushPermission === 'denied'
+                                                ? (lang === 'th' ? 'เบราว์เซอร์บล็อกการแจ้งเตือนอยู่' : 'Notifications are blocked in this browser')
+                                                : pushSubscribed
+                                                    ? (lang === 'th' ? 'เปิดใช้งานแล้วสำหรับอุปกรณ์นี้' : 'Enabled on this device')
+                                                    : (lang === 'th' ? 'เปิดเพื่อรับแจ้งเตือนแม้ไม่ได้อยู่หน้าเว็บ' : 'Enable to receive notifications outside the page')
+                                            : (lang === 'th' ? 'เบราว์เซอร์หรืออุปกรณ์นี้ยังไม่รองรับ' : 'This browser or device is not supported')}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => pushSubscribed ? onDisablePush() : onEnablePush()}
+                                    disabled={!pushSupported || pushPermission === 'denied' || pushLoading}
+                                    className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                                        pushSubscribed
+                                            ? 'bg-white/10 text-gray-200 hover:bg-white/15'
+                                            : 'bg-[#ff6b35] text-white hover:bg-[#ff6b35]/90'
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                    {pushLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    {pushSubscribed
+                                        ? (lang === 'th' ? 'ปิดบนอุปกรณ์นี้' : 'Disable')
+                                        : (lang === 'th' ? 'เปิดบนอุปกรณ์นี้' : 'Enable')}
+                                </button>
+                            </div>
+                        </div>
                         <p className="text-xs text-gray-500 pt-2">
                             {lang === 'th' ? '✓ การตั้งค่าจะถูกบันทึกทันทีและมีผลในทันที' : '✓ Settings are saved instantly and take effect immediately'}
                         </p>

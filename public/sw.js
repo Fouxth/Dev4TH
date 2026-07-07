@@ -100,8 +100,8 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.body || 'New notification',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: '/icon-192.svg',
+    badge: '/icon-192.svg',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/',

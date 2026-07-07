@@ -14,7 +14,15 @@ authRouter.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'กรุณากรอก email และ password' });
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const loginEmail = String(email).trim();
+        const user = await prisma.user.findFirst({
+            where: {
+                email: {
+                    equals: loginEmail,
+                    mode: 'insensitive'
+                }
+            }
+        });
         if (!user) {
             return res.status(401).json({ error: 'ไม่พบบัญชีนี้ในระบบ' });
         }
@@ -69,8 +77,16 @@ authRouter.post('/register', async (req, res) => {
 
         const allowedRoles = ['developer', 'designer', 'tester', 'manager'];
         const validRole = allowedRoles.includes(role) ? role : 'developer';
+        const normalizedEmail = String(email).trim();
 
-        const existing = await prisma.user.findUnique({ where: { email } });
+        const existing = await prisma.user.findFirst({
+            where: {
+                email: {
+                    equals: normalizedEmail,
+                    mode: 'insensitive'
+                }
+            }
+        });
         if (existing) {
             return res.status(409).json({ error: 'อีเมลนี้ถูกใช้แล้ว' });
         }
@@ -79,7 +95,7 @@ authRouter.post('/register', async (req, res) => {
         const user = await prisma.user.create({
             data: {
                 name,
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
                 role: validRole,
                 department: department || undefined,

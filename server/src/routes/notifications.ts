@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
+import { getVapidPublicKey } from '../lib/pushNotifications.js';
 
 export const notificationsRouter = Router();
 
@@ -21,6 +22,61 @@ notificationsRouter.get('/', async (req: any, res) => {
     } catch (error) {
         console.error('Error fetching notifications:', error);
         res.status(500).json({ error: 'Failed to fetch notifications' });
+    }
+});
+
+notificationsRouter.get('/push/public-key', (_req: any, res) => {
+    const publicKey = getVapidPublicKey();
+    if (!publicKey) {
+        return res.status(503).json({ error: 'Push notifications are not configured' });
+    }
+    res.json({ publicKey });
+});
+
+notificationsRouter.post('/push/subscribe', async (req: any, res) => {
+    try {
+        const { endpoint, keys } = req.body || {};
+        if (!endpoint || !keys?.p256dh || !keys?.auth) {
+            return res.status(400).json({ error: 'Invalid push subscription' });
+        }
+
+        const subscription = await prisma.pushSubscription.upsert({
+            where: { endpoint },
+            create: {
+                userId: req.userId,
+                endpoint,
+                p256dh: keys.p256dh,
+                auth: keys.auth,
+                userAgent: req.get('user-agent') || null
+            },
+            update: {
+                userId: req.userId,
+                p256dh: keys.p256dh,
+                auth: keys.auth,
+                userAgent: req.get('user-agent') || null
+            }
+        });
+
+        res.json({ success: true, id: subscription.id });
+    } catch (error) {
+        console.error('Error saving push subscription:', error);
+        res.status(500).json({ error: 'Failed to save push subscription' });
+    }
+});
+
+notificationsRouter.post('/push/unsubscribe', async (req: any, res) => {
+    try {
+        const { endpoint } = req.body || {};
+        if (!endpoint) return res.status(400).json({ error: 'Endpoint required' });
+
+        await prisma.pushSubscription.deleteMany({
+            where: { endpoint, userId: req.userId }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Error deleting push subscription:', error);
+        res.status(500).json({ error: 'Failed to delete push subscription' });
     }
 });
 

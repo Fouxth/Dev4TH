@@ -5,7 +5,7 @@ import { getSocketUrl } from '@/lib/socketUrl';
 export interface Notification {
     id: string;
     userId: string;
-    type: 'task_assigned' | 'task_completed' | 'task_created' | 'comment' | 'mention' | 'due_soon';
+    type: 'task_assigned' | 'task_completed' | 'task_created' | 'comment' | 'mention' | 'due_soon' | 'chat' | 'info' | 'success' | 'warning' | 'error';
     title: string;
     message: string;
     read: boolean;
@@ -19,6 +19,7 @@ export interface NotificationPrefs {
     taskDue: boolean;
     mention: boolean;
     projectUpdate: boolean;
+    chatMessages: boolean;
     weeklyReport: boolean;
 }
 
@@ -27,6 +28,7 @@ export const DEFAULT_NOTIF_PREFS: NotificationPrefs = {
     taskDue: true,
     mention: true,
     projectUpdate: false,
+    chatMessages: true,
     weeklyReport: true,
 };
 
@@ -38,7 +40,15 @@ const TYPE_TO_PREF: Record<string, keyof NotificationPrefs> = {
     task_created:  'projectUpdate',
     task_completed:'projectUpdate',
     comment:       'projectUpdate',
+    chat:          'chatMessages',
 };
+
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
 
 interface UseNotificationsOptions {
     token: string | null;
@@ -82,6 +92,12 @@ const playNotificationSound = () => {
 export function useNotifications({ token, prefs, onNotification }: UseNotificationsOptions) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [pushSupported, setPushSupported] = useState(false);
+    const [pushPermission, setPushPermission] = useState<NotificationPermission>(
+        typeof window !== 'undefined' && 'Notification' in window ? window.Notification.permission : 'default'
+    );
+    const [pushSubscribed, setPushSubscribed] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
     const socketRef = useRef<Socket | null>(null);
 
     // Fetch notifications from REST API
@@ -150,6 +166,98 @@ export function useNotifications({ token, prefs, onNotification }: UseNotificati
         };
     }, [token, fetchNotifications]);
 
+    const getServiceWorkerRegistration = useCallback(async () => {
+        if (!('serviceWorker' in navigator)) return null;
+        const existing = await navigator.serviceWorker.getRegistration();
+        if (existing) return existing;
+        return navigator.serviceWorker.register('/sw.js');
+    }, []);
+
+    const refreshPushStatus = useCallback(async () => {
+        const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        setPushSupported(supported);
+        if (!supported) return;
+
+        setPushPermission(window.Notification.permission);
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager.getSubscription();
+        setPushSubscribed(Boolean(subscription));
+    }, []);
+
+    useEffect(() => {
+        refreshPushStatus().catch(() => {});
+    }, [refreshPushStatus]);
+
+    const enablePushNotifications = useCallback(async () => {
+        if (!token) return false;
+        setPushLoading(true);
+        try {
+            const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+            setPushSupported(supported);
+            if (!supported) return false;
+
+            const permission = await window.Notification.requestPermission();
+            setPushPermission(permission);
+            if (permission !== 'granted') return false;
+
+            const keyRes = await fetch('/api/notifications/push/public-key', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!keyRes.ok) return false;
+            const { publicKey } = await keyRes.json();
+
+            const registration = await getServiceWorkerRegistration();
+            if (!registration) return false;
+
+            const existing = await registration.pushManager.getSubscription();
+            const subscription = existing ?? await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicKey)
+            });
+
+            const res = await fetch('/api/notifications/push/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(subscription.toJSON())
+            });
+            const ok = res.ok;
+            setPushSubscribed(ok);
+            return ok;
+        } catch (error) {
+            console.error('Failed to enable push notifications:', error);
+            return false;
+        } finally {
+            setPushLoading(false);
+        }
+    }, [getServiceWorkerRegistration, token]);
+
+    const disablePushNotifications = useCallback(async () => {
+        if (!token) return false;
+        setPushLoading(true);
+        try {
+            const registration = await navigator.serviceWorker.getRegistration();
+            const subscription = await registration?.pushManager.getSubscription();
+            if (!subscription) {
+                setPushSubscribed(false);
+                return true;
+            }
+
+            await fetch('/api/notifications/push/unsubscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ endpoint: subscription.endpoint })
+            });
+            await subscription.unsubscribe();
+            setPushSubscribed(false);
+            return true;
+        } catch (error) {
+            console.error('Failed to disable push notifications:', error);
+            return false;
+        } finally {
+            setPushLoading(false);
+        }
+    }, [token]);
+
     // Mark single as read
     const markAsRead = useCallback(async (id: string) => {
         if (!token) return;
@@ -205,6 +313,13 @@ export function useNotifications({ token, prefs, onNotification }: UseNotificati
     return {
         notifications,
         unreadCount,
+        pushSupported,
+        pushPermission,
+        pushSubscribed,
+        pushLoading,
+        enablePushNotifications,
+        disablePushNotifications,
+        refreshPushStatus,
         markAsRead,
         markAllRead,
         deleteNotification,

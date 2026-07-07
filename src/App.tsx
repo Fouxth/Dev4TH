@@ -142,7 +142,18 @@ function App() {
     localStorage.setItem('notif_prefs', JSON.stringify(prefs));
   };
 
-  const { notifications, markAsRead, markAllRead, deleteNotification } = useNotifications({
+  const {
+    notifications,
+    markAsRead,
+    markAllRead,
+    deleteNotification,
+    pushSupported,
+    pushPermission,
+    pushSubscribed,
+    pushLoading,
+    enablePushNotifications,
+    disablePushNotifications
+  } = useNotifications({
     token,
     prefs: notifPrefs,
     onNotification: (notification) => {
@@ -631,6 +642,12 @@ function App() {
             onLangChange={setLang}
             notifPrefs={notifPrefs}
             onNotifPrefsChange={handleNotifPrefsChange}
+            pushSupported={pushSupported}
+            pushPermission={pushPermission}
+            pushSubscribed={pushSubscribed}
+            pushLoading={pushLoading}
+            onEnablePush={enablePushNotifications}
+            onDisablePush={disablePushNotifications}
             onUserUpdate={async (data: Partial<User>) => {
               const res = await fetch(`/api/profile`, {
                 method: 'PATCH',

@@ -1,7 +1,25 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { prisma } from './prisma.js';
+import { sendPushToUser } from './pushNotifications.js';
 
 let io: SocketIOServer | null = null;
+
+function isNotificationPayload(data: unknown): data is {
+    id?: string;
+    type?: string;
+    title: string;
+    message: string;
+    link?: string | null;
+} {
+    return Boolean(
+        data &&
+        typeof data === 'object' &&
+        'title' in data &&
+        'message' in data &&
+        typeof (data as any).title === 'string' &&
+        typeof (data as any).message === 'string'
+    );
+}
 
 export function setIO(socketIO: SocketIOServer) {
     io = socketIO;
@@ -16,6 +34,14 @@ export function getIO(): SocketIOServer {
 export function emitToUser(userId: string, event: string, data: unknown) {
     if (io) {
         io.to(`user:${userId}`).emit(event, data);
+    }
+    if (event === 'new_notification' && isNotificationPayload(data)) {
+        sendPushToUser(userId, {
+            title: data.title,
+            body: data.message,
+            url: data.link ?? undefined,
+            tag: `${data.type ?? 'notification'}:${data.link ?? data.id ?? Date.now()}`
+        }).catch(error => console.error('Failed to send push notification:', error));
     }
 }
 
