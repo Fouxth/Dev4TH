@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { authenticate, type AuthRequest } from '../middleware/auth.js';
-import { createAndSendNotification, getIO } from '../lib/socket.js';
+import { createAndSendNotification, emitToUsers, getIO } from '../lib/socket.js';
 
 export const chatsRouter = Router();
 chatsRouter.use(authenticate);
@@ -252,6 +252,8 @@ chatsRouter.post('/:id/messages', async (req: AuthRequest, res) => {
             const otherIds = chat.members
                 .filter((m: { userId: string }) => m.userId !== userId)
                 .map((m: { userId: string }) => m.userId);
+
+            emitToUsers(otherIds, 'chat:message', message);
 
             const senderName = message.user.name;
             const chatName = chat.type === 'project'

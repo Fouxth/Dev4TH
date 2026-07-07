@@ -749,7 +749,10 @@ function App() {
       {/* Chat Panel */}
       <ChatPanel
         isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
+        onClose={() => {
+          chatHook.closeChat();
+          setIsChatOpen(false);
+        }}
         chatHook={chatHook}
         currentUser={authUser}
         users={store.users}

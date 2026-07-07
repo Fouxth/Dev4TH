@@ -19,6 +19,14 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
     const typingTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
     const activeChatIdRef = useRef<string | null>(null);
 
+    const mergeMessages = useCallback((existing: ChatMessage[], incoming: ChatMessage[]) => {
+        const byId = new Map<string, ChatMessage>();
+        [...existing, ...incoming].forEach(message => byId.set(message.id, message));
+        return Array.from(byId.values()).sort(
+            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+    }, []);
+
     // Keep ref in sync
     useEffect(() => { activeChatIdRef.current = activeChatId; }, [activeChatId]);
 
@@ -65,14 +73,14 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
                 setMessages(prev => ({
                     ...prev,
                     [chatId]: before
-                        ? [...data, ...(prev[chatId] ?? [])]
-                        : data
+                        ? mergeMessages(data, prev[chatId] ?? [])
+                        : mergeMessages(prev[chatId] ?? [], data)
                 }));
             }
         } catch (err) {
             console.error('Failed to fetch messages', err);
         }
-    }, [token, authHeader]);
+    }, [token, authHeader, mergeMessages]);
 
     // ─── Open a chat ──────────────────────────────────────────────────────────
     const openChat = useCallback(async (chatId: string) => {
@@ -86,11 +94,8 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
     }, [messages, fetchMessages]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const closeChat = useCallback(() => {
-        if (activeChatId) {
-            socketRef.current?.emit('chat:leave', activeChatId);
-        }
         setActiveChatId(null);
-    }, [activeChatId]);
+    }, []);
 
     // ─── Create / get chat ────────────────────────────────────────────────────
     const openDirectChat = useCallback(async (otherUserId: string): Promise<Chat | null> => {
@@ -234,7 +239,7 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
         socket.on('chat:message', (msg: ChatMessage) => {
             setMessages(prev => ({
                 ...prev,
-                [msg.chatId]: [...(prev[msg.chatId] ?? []), msg]
+                [msg.chatId]: mergeMessages(prev[msg.chatId] ?? [], [msg])
             }));
 
             const isActive = msg.chatId === activeChatIdRef.current;
@@ -250,6 +255,12 @@ export function useChats({ token, currentUserId }: UseChatsOptions) {
 
             // Bump chat to top + increment unread if not the active chat
             setChats(prev => {
+                const chatExists = prev.some(c => c.id === msg.chatId);
+                if (!chatExists) {
+                    fetchChats();
+                    return prev;
+                }
+
                 const updated = prev.map(c => {
                     if (c.id !== msg.chatId) return c;
                     return {

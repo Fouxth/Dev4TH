@@ -95,6 +95,7 @@ io.on('connection', (socket) => {
     socket.on('chat:typing', (data: { chatId: string; isTyping: boolean; userName: string }) => {
         socket.to(`chat:${data.chatId}`).emit('chat:typing', {
             userId,
+            chatId: data.chatId,
             userName: data.userName,
             isTyping: data.isTyping
         });
