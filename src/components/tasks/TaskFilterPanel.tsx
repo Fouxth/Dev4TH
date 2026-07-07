@@ -103,7 +103,7 @@ export function TaskFilterPanel({ users, projects, allTags, filters, onFiltersCh
     );
 
     return (
-        <div className="w-72 bg-[#161616] border border-white/5 rounded-xl p-4 shadow-2xl space-y-1">
+        <div className="w-[calc(100vw-2rem)] max-w-72 bg-[#161616] border border-white/5 rounded-xl p-4 shadow-2xl space-y-1">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2 text-white font-medium text-sm">

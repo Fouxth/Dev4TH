@@ -125,17 +125,17 @@ export function ProjectDetailPage({
           {t.common?.back || 'กลับ'}
         </button>
 
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0"
                 style={{ backgroundColor: project.color }}
               >
                 {(project as any).icon || '📁'}
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-white">{project.name}</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl sm:text-3xl font-bold text-white break-words">{project.name}</h1>
                 {projectTeam && (
                   <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
                     <Users className="w-4 h-4" />
@@ -150,7 +150,7 @@ export function ProjectDetailPage({
           </div>
 
           {/* Overall Progress */}
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4 min-w-[200px]">
+          <div className="w-full sm:w-auto bg-white/5 border border-white/10 rounded-xl p-4 sm:min-w-[200px]">
             <div className="text-sm text-gray-400 mb-2">{t.projects?.progress || 'ความคืบหน้า'}</div>
             <div className="flex items-baseline gap-2 mb-2">
               <span className="text-3xl font-bold text-white">{stats.progress}%</span>

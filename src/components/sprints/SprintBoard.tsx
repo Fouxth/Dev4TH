@@ -185,7 +185,7 @@ export function SprintBoard({
           </div>
 
           {/* Task Status Summary */}
-          <div className="flex gap-3 text-xs">
+          <div className="flex flex-wrap gap-3 text-xs">
             <span className="flex items-center gap-1 text-gray-400">
               <Circle className="w-3 h-3" /> {sTasks.filter(t => t.status === 'todo').length} {t.sprint?.todoCount || 'Todo'}
             </span>

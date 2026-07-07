@@ -60,7 +60,7 @@ const ALERT_CONFIG: Record<AlertType, {
 
 export function AlertSystem({ alerts, onDismiss }: AlertSystemProps) {
     return (
-        <div className="fixed top-16 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+        <div className="fixed top-16 right-4 left-4 sm:left-auto z-[100] flex flex-col gap-2 pointer-events-none items-end">
             {alerts.map(alert => (
                 <AlertItem
                     key={alert.id}
@@ -90,7 +90,7 @@ function AlertItem({ alert, onDismiss }: { alert: Alert; onDismiss: () => void }
     return (
         <div
             className={cn(
-                "pointer-events-auto w-[400px] p-4 rounded-xl border-2 backdrop-blur-xl shadow-2xl",
+                "pointer-events-auto w-full sm:w-[400px] p-4 rounded-xl border-2 backdrop-blur-xl shadow-2xl",
                 "transition-all duration-300",
                 config.bgColor,
                 config.borderColor,
