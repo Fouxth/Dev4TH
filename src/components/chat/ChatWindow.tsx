@@ -212,7 +212,7 @@ export function MessageInput({ onSend, onTyping, onMarkRead, replyTo, onCancelRe
                 </div>
             )}
 
-            <div className="flex items-end gap-2">
+            <div className="flex items-end gap-2 min-w-0">
                 <textarea
                     ref={textareaRef}
                     value={content}
@@ -224,11 +224,11 @@ export function MessageInput({ onSend, onTyping, onMarkRead, replyTo, onCancelRe
                             handleSubmit();
                         }
                     }}
-                    placeholder="พิมพ์ข้อความ... (Enter ส่ง, Shift+Enter ขึ้นบรรทัดใหม่)"
+                    placeholder="พิมพ์ข้อความ..."
                     disabled={disabled}
                     rows={1}
                     className={cn(
-                        'flex-1 px-4 py-2.5 rounded-xl bg-muted border border-border',
+                        'flex-1 min-w-0 px-4 py-2.5 rounded-xl bg-muted border border-border',
                         'text-foreground text-sm placeholder:text-muted-foreground resize-none',
                         'focus:outline-none focus:border-[var(--orange)]/50',
                         'transition-colors min-h-[42px]'
@@ -248,7 +248,6 @@ export function MessageInput({ onSend, onTyping, onMarkRead, replyTo, onCancelRe
                     <Send className="w-4 h-4" />
                 </button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1 px-1">Enter ส่ง • Shift+Enter ขึ้นบรรทัดใหม่</p>
         </div>
     );
 }
@@ -270,6 +269,7 @@ interface ChatWindowProps {
 }
 
 export function ChatWindow({
+    chatId,
     messages,
     currentUserId,
     memberReadAt = {},
@@ -299,10 +299,20 @@ export function ChatWindow({
         prevLengthRef.current = messages.length;
     }, [messages.length]);
 
-    // Scroll to bottom on initial load
+    // Scroll to bottom when messages are first loaded or chat changes
+    const hasMountScrolled = useRef(false);
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'instant' });
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        hasMountScrolled.current = false;
+    }, [chatId]);
+
+    useEffect(() => {
+        if (!hasMountScrolled.current && messages.length > 0) {
+            hasMountScrolled.current = true;
+            requestAnimationFrame(() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+            });
+        }
+    }, [messages.length, chatId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Group messages by date
     const grouped = groupByDate(messages);
