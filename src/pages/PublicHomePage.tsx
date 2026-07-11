@@ -139,11 +139,9 @@ export function PublicHomePage() {
 
   useEffect(() => {
     const fetchPublicData = async () => {
-      const socketUrl = import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('/socket.io', '') : 'https://dev4th.duckdns.org';
-      
       // Fetch works
       try {
-        const res = await fetch(`${socketUrl}/api/public/works`);
+        const res = await fetch('/api/public/works');
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data) && data.length > 0) {
@@ -156,7 +154,7 @@ export function PublicHomePage() {
 
       // Fetch settings
       try {
-        const res = await fetch(`${socketUrl}/api/public/settings`);
+        const res = await fetch('/api/public/settings');
         if (res.ok) {
           const data = await res.json();
           if (data) {
@@ -255,7 +253,7 @@ export function PublicHomePage() {
     setQuotationMessage('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SOCKET_URL ? import.meta.env.VITE_SOCKET_URL.replace('/socket.io', '') : 'https://dev4th.duckdns.org'}/api/quotations`, {
+      const response = await fetch('/api/quotations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

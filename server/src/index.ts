@@ -49,6 +49,8 @@ const io = new SocketIOServer(httpServer, {
             'http://127.0.0.1:5174',
             'http://localhost:4173',
             'http://127.0.0.1:4173',
+            'https://dev4th.xyz',
+            'https://www.dev4th.xyz',
             'https://dxv4th.vercel.app',
             /\.vercel\.app$/,
             /\.trycloudflare\.com$/
@@ -129,6 +131,8 @@ app.use(cors({
         'http://127.0.0.1:5174',
         'http://localhost:4173',
         'http://127.0.0.1:4173',
+        'https://dev4th.xyz',
+        'https://www.dev4th.xyz',
         'https://dxv4th.vercel.app',
         /\.vercel\.app$/
     ],
